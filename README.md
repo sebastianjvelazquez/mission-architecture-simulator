@@ -2,6 +2,8 @@
 ## Complete Project Breakdown & Team Guide
 ### Team Size: 4 People | Timeline: Jan 26 - Apr 27, 2026
 
+**🌐 LIVE WEB DEPLOYMENT REQUIRED**
+
 ---
 
 ## 📋 TABLE OF CONTENTS
@@ -13,9 +15,10 @@
 5. [Increment 1: Foundation (Feb 23)](#increment-1-foundation)
 6. [Increment 2: Propagation Logic (Mar 23)](#increment-2-propagation-logic)
 7. [Increment 3: Polish & Mitigations (Apr 27)](#increment-3-polish--mitigations)
-8. [Communication & Workflow](#communication--workflow)
-9. [Grading & ABET Outcomes](#grading--abet-outcomes)
-10. [Weekly Checklists](#weekly-checklists)
+8. [Web Deployment Guide](#web-deployment-guide)
+9. [Communication & Workflow](#communication--workflow)
+10. [Grading & ABET Outcomes](#grading--abet-outcomes)
+11. [Weekly Checklists](#weekly-checklists)
 
 ---
 
@@ -36,7 +39,9 @@
 - **Defense Industry Relevance:** Mission assurance is a top priority for DoD, DISA, and defense contractors
 - **Systems Thinking:** Teaches how attacks cascade through dependencies
 - **Full-Stack Development:** Real-world architecture (frontend, backend, database, DevOps)
-- **Interview-Ready:** You'll have a portfolio project that impresses security teams at Raytheon, Lockheed Martin, Northrop Grumman
+- **Cloud Deployment Experience:** Learn to deploy and manage production applications on Vercel and Render
+- **Interview-Ready:** You'll have a live portfolio project with public URLs that impresses security teams at Raytheon, Lockheed Martin, Northrop Grumman
+- **Public Accessibility:** Deployed online so anyone can access and test your work
 
 ---
 
@@ -52,6 +57,7 @@
 - Results dashboard (charts, results display, criticality tables)
 - UI polish (clean, professional interface)
 - Component attribute editor (edit criticality, CIA requirements, etc.)
+- Ensure responsive design works on deployed site
 
 **Skills Needed:** 
 - React/TypeScript (or willing to learn)
@@ -63,7 +69,7 @@
 **Deliverables by Increment:**
 - Increment 1: Working diagram editor + basic results dashboard
 - Increment 2: Scenario library UI + improved results panel
-- Increment 3: Clone & compare UI, mitigation recommender UI, polish
+- Increment 3: Clone & compare UI, mitigation recommender UI, polish, production-ready for deployment
 
 ---
 
@@ -76,6 +82,7 @@
 - Graph algorithms using NetworkX
 - Scenario logic (node compromise, link degradation, insider tampering)
 - API documentation (Swagger/OpenAPI)
+- Production environment configuration (CORS, environment variables)
 
 **Skills Needed:**
 - Python (or willing to learn)
@@ -87,7 +94,7 @@
 **Deliverables by Increment:**
 - Increment 1: FastAPI setup + node compromise scenario + scoring
 - Increment 2: Link degradation + insider tampering scenarios + propagation logic
-- Increment 3: Mitigation suggester logic
+- Increment 3: Mitigation suggester logic + production deployment configuration
 
 ---
 
@@ -100,6 +107,7 @@
 - Database migrations
 - Backend-database integration
 - Data validation (Pydantic models)
+- Production database setup on Render/Railway
 
 **Skills Needed:**
 - SQL basics (or willing to learn)
@@ -111,7 +119,7 @@
 **Deliverables by Increment:**
 - Increment 1: Schema design + models + save/load endpoints
 - Increment 2: Scenario storage + query optimization
-- Increment 3: Data integrity + backup considerations
+- Increment 3: Data integrity + backup considerations + production database deployment
 
 ---
 
@@ -126,19 +134,22 @@
 - RD & IT documentation
 - Progress reports
 - Demo videos
+- **Web deployment to Vercel (frontend) and Render (backend)**
+- Production environment management
 
 **Skills Needed:**
 - Python testing (pytest)
 - YAML (for GitHub Actions)
 - Technical writing
 - Docker basics
+- **Vercel and Render deployment**
 
 **Effort:** ~12-15 hours/week average
 
 **Deliverables by Increment:**
 - Increment 1: CI/CD pipeline + RD v1 + IT v1 + tests (60%+ coverage)
 - Increment 2: RD v2 + IT v2 + tests (70%+ coverage) + video
-- Increment 3: RD v3 + IT v3 + tests (85%+ coverage) + final video + progress report
+- Increment 3: RD v3 + IT v3 + tests (85%+ coverage) + final video + progress report + **web deployment to Vercel and Render**
 
 ---
 
@@ -182,7 +193,11 @@
 
 ## Deployment
 - **Local Development:** Docker Compose
-- **Production (optional):** Vercel (frontend) + Render/Railway (backend)
+- **Production (REQUIRED):**
+  - **Frontend:** Vercel (https://vercel.com) - Free tier
+  - **Backend:** Render (https://render.com) or Railway (https://railway.app) - Free tier
+  - **Database:** PostgreSQL on Render or Railway - Free tier
+  - **Total Cost:** $0
 
 ---
 
@@ -195,7 +210,7 @@
 | **Proposal** | Jan 26 @ 11:59pm | Project proposal (1-2 pages) | N/A |
 | **Increment 1 Due** | Feb 23 @ 11:59pm | Code + RD + IT + Video + Progress Report + Tests | 255 pts |
 | **Increment 2 Due** | Mar 23 @ 11:59pm | Code + RD + IT + Video + Progress Report + Tests | 255 pts |
-| **Increment 3 Due** | Apr 27 @ 11:59pm | Code + RD + IT + Video + Progress Report + Tests | 255 pts |
+| **Increment 3 Due** | Apr 27 @ 11:59pm | Code + RD + IT + Video + Progress Report + Tests + **Live Deployment URLs** | 255 pts |
 
 ## ⏰ Detailed Timeline
 
@@ -580,6 +595,8 @@ Person 4 (Testing/DevOps):
 - ✅ IT document v3 (complete testing results, deployment guide)
 - ✅ Final demo video (baseline → attack → mitigate → improved score)
 - ✅ Final progress report
+- ✅ **Web deployment (Vercel + Render)**
+- ✅ **Live demo URLs working and accessible**
 - ✅ **LIVE CLASS PRESENTATION**
 
 **Weekly Breakdown:**
@@ -631,11 +648,13 @@ Person 4 (Testing/DevOps):
 - [ ] Tests for clone/compare
 - [ ] Expand IT document (deployment)
 - [ ] Create traceability matrix
+- [ ] Create Vercel & Render accounts
+- [ ] Plan deployment architecture
 - Effort: 12-14 hours
 
 ---
 
-#### **Week 15 (Apr 7-13): Final Polish**
+#### **Week 15 (Apr 7-13): Final Polish & Deployment Prep**
 
 Person 1 (Frontend):
 - [ ] UI refinement
@@ -643,50 +662,73 @@ Person 1 (Frontend):
 - [ ] Edit component properties
 - [ ] Performance optimization
 - [ ] Optional: Dark mode
+- [ ] Test all browsers
 - Effort: 14-16 hours
 
 Person 2 (Backend):
 - [ ] Refactor for readability
 - [ ] Optimize algorithms
 - [ ] Final bug fixes
+- [ ] CORS configured for production
+- [ ] Environment variables documented
 - Effort: 10-12 hours
 
 Person 3 (Database):
 - [ ] Final schema review
 - [ ] Backup & recovery documentation
+- [ ] Connection string for production ready
 - Effort: 4-6 hours
 
 Person 4 (Testing/DevOps):
 - [ ] Expand to 85%+ coverage
 - [ ] Complete RD v3 (with traceability matrix)
-- [ ] Complete IT v3 (known issues, future work)
+- [ ] Complete IT v3 (known issues, future work, deployment guide)
 - [ ] Record final demo video script
+- [ ] Begin backend deployment to Render
 - Effort: 16-18 hours
 
 ---
 
-#### **Week 16 (Apr 14-20): Testing & Documentation**
+#### **Week 16 (Apr 14-20): Testing & DEPLOYMENT**
 
 **Person 1 (Frontend):**
 - [ ] Final UI bugs
 - [ ] Cross-browser testing
+- [ ] Prepare for Vercel deployment
 - Effort: 6-8 hours
 
 **Person 2 (Backend):**
 - [ ] Code cleanup
 - [ ] Final tests
+- [ ] Deploy backend to Render
+- [ ] Test deployed API endpoints
 - Effort: 8-10 hours
 
 **Person 3 (Database):**
 - [ ] Final integrity checks
-- Effort: 3-4 hours
+- [ ] Create PostgreSQL database on Render
+- [ ] Verify production database connection
+- Effort: 6-8 hours
 
 **Person 4 (Testing/DevOps):**
-- [ ] Record and upload final demo video
+- [ ] Deploy frontend to Vercel
+- [ ] Configure environment variables (Render & Vercel)
+- [ ] End-to-end testing on live URLs
+- [ ] Record and upload final demo video (use live URLs)
 - [ ] Verify 85%+ coverage
 - [ ] Final RD/IT review
 - [ ] Write final progress report
-- Effort: 10-12 hours
+- Effort: 12-16 hours
+
+**All Team - DEPLOYMENT TASKS (CRITICAL):**
+- [ ] Frontend deployed to Vercel (public URL)
+- [ ] Backend deployed to Render (public API URL)
+- [ ] PostgreSQL created on Render
+- [ ] Environment variables configured
+- [ ] CORS settings updated for production
+- [ ] End-to-end testing complete (browser → Vercel → Render → PostgreSQL)
+- [ ] Live URLs documented in README
+- [ ] No console errors or warnings
 
 ---
 
@@ -697,22 +739,29 @@ Person 4 (Testing/DevOps):
 All team members:
 - [ ] Final code cleanup
 - [ ] Final review of all deliverables
+- [ ] **Verify live deployment is working (CRITICAL)**
 - [ ] Submit to Canvas:
-- Progress Report
-- RD.docx (v3)
-- IT.docx (v3)
-- Video link
-- GitHub link
+  - Progress Report
+  - RD.docx (v3)
+  - IT.docx (v3)
+  - Video link
+  - GitHub link
+  - **🌐 LIVE DEPLOYMENT URLS:**
+    - Frontend URL: https://your-project.vercel.app
+    - Backend API URL: https://your-project.onrender.com
+    - API Docs: https://your-project.onrender.com/docs
 
 **Then (after Apr 27):**
 - [ ] **LIVE CLASS PRESENTATION (5-7 min demo)**
-- Show architecture builder
-- Run attack on baseline
-- Show how it fails
-- Clone and harden
-- Run same attack again
-- Show improvement
-- Brief team reflection
+  - **Open live deployed app in browser (NOT localhost!)**
+  - Show architecture builder
+  - Run attack on baseline
+  - Show how it fails
+  - Clone and harden
+  - Run same attack again
+  - Show improvement
+  - Brief team reflection
+  - **Share live URLs with class/professor**
 
 **Total Increment 3 Effort:** ~180-200 hours total (45-50 hours/person average)
 
@@ -1143,8 +1192,12 @@ Screen recording:
 
 **To Get an "A":** ~215+ points (84%+)
 
-INCREMENT 2: PROPAGATION LOGIC
-Increment 2 Goals
+---
+
+# INCREMENT 2: PROPAGATION LOGIC
+
+## Increment 2 Goals
+
 By Mar 23 @ 11:59pm, you must have:
 
 ✅ Two more attack scenarios (link degradation, insider tampering)
@@ -1156,7 +1209,9 @@ By Mar 23 @ 11:59pm, you must have:
 ✅ Demo video (compare 2 attacks)
 ✅ 70%+ test coverage
 ✅ Progress report
-What to Build
+
+## What to Build
+
 ### Component 1: Link Degradation Scenario
 
 **User Story:**
@@ -1834,13 +1889,20 @@ REQ-003 | Save Architecture | FEAT-003 | test_save | ✓
 - Indexes for performance
 - Backup strategy
 
-**Deployment Guide (NEW)**
+**Deployment Guide (REQUIRED - CRITICAL)**
 
-- Local: docker-compose up
-- Production: Vercel + Render (if applicable)
-- Environment variables needed
-- Database initialization
-- Scaling considerations
+- **Live Deployment URLs:**
+  - Frontend: https://your-project.vercel.app
+  - Backend API: https://your-project.onrender.com
+  - API Docs: https://your-project.onrender.com/docs
+- Complete Vercel setup instructions
+- Complete Render setup instructions
+- PostgreSQL configuration on Render
+- Environment variables needed (with placeholders, not secrets)
+- CORS configuration for production
+- Local: docker-compose up (for development)
+- Database initialization & migrations
+- Troubleshooting common issues
 
 **Known Issues & Future Work (NEW)**
 
@@ -1867,7 +1929,8 @@ REQ-003 | Save Architecture | FEAT-003 | test_save | ✓
 ```
 0:00-0:30 – OPENING & SCENARIO
 "We're demonstrating how our simulator helps mission planners 
- evaluate resilience. Here's a critical communications network."
+ evaluate resilience. Here's our LIVE DEPLOYED application."
+[Open browser to https://your-project.vercel.app - NOT localhost!]
 [Show architecture: 3-5 key components]
 
 0:30-1:30 – BASELINE UNDER ATTACK
@@ -1907,20 +1970,24 @@ REQ-003 | Save Architecture | FEAT-003 | test_save | ✓
 - Cyber resilience concepts
 - Defense-relevant problem domain
 - Professional software engineering practices
+- LIVE WEB DEPLOYMENT with cloud hosting
 
-Challenges: React Flow learning curve, propagation logic correctness
-Solutions: Code review, extensive testing, documentation
+Challenges: React Flow learning curve, propagation logic correctness, cloud deployment configuration
+Solutions: Code review, extensive testing, documentation, proper CORS setup
 
 This project taught us how to think about mission assurance."
 
 6:30-7:00 – CLOSING
 "Full code on GitHub: [link]
- Deployed at: [link, if applicable]
+ 🌐 LIVE DEPLOYMENT:
+   - Frontend: https://your-project.vercel.app
+   - Backend API: https://your-project.onrender.com/docs
  Thanks for watching."
 ```
 
 **Recording Tips:**
 
+- **IMPORTANT: Demo the LIVE deployed version, not localhost!**
 - Speak clearly and confidently
 - Use a script so you don't ramble
 - Do 2-3 takes and pick the best
@@ -1965,6 +2032,406 @@ Same as Increments 1 & 2, with emphasis on:
 - Test coverage (85%+)
 - Documentation completeness (traceability matrix)
 - Overall project maturity
+- **🌐 Live deployment working and accessible**
+
+---
+
+# WEB DEPLOYMENT GUIDE
+
+## 🌐 Deployment Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     PRODUCTION DEPLOYMENT                    │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│   ┌──────────────┐    HTTPS    ┌──────────────────────┐    │
+│   │   Browser    │◄───────────►│   Vercel CDN         │    │
+│   │   (User)     │             │   (Next.js Frontend) │    │
+│   └──────────────┘             └──────────┬───────────┘    │
+│                                           │                  │
+│                                    API Calls                 │
+│                                           │                  │
+│                                           ▼                  │
+│                                ┌──────────────────────┐     │
+│                                │   Render.com         │     │
+│                                │   (FastAPI Backend)  │     │
+│                                └──────────┬───────────┘     │
+│                                           │                  │
+│                                           ▼                  │
+│                                ┌──────────────────────┐     │
+│                                │   Render PostgreSQL  │     │
+│                                │   (Database)         │     │
+│                                └──────────────────────┘     │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Why This Architecture:**
+- **Vercel**: Best-in-class Next.js hosting, automatic HTTPS, global CDN, free tier perfect for capstone
+- **Render**: Easy Python/FastAPI deployment, managed PostgreSQL included, free tier available
+- **Total Cost**: $0 (using free tiers)
+
+---
+
+## 📋 Deployment Prerequisites
+
+Before deploying, ensure you have:
+
+- [ ] GitHub repository with working code (all tests passing locally)
+- [ ] Environment variables documented
+- [ ] GitHub account connected to both Vercel and Render
+- [ ] Local development working end-to-end
+
+---
+
+## 🚀 Step 1: Deploy Frontend to Vercel
+
+### 1.1 Create Vercel Account
+
+1. Go to [vercel.com](https://vercel.com)
+2. Click "Sign Up" → "Continue with GitHub"
+3. Authorize Vercel to access your GitHub account
+4. Complete account setup
+
+### 1.2 Import Your Project
+
+1. From Vercel dashboard, click "Add New..." → "Project"
+2. Select your GitHub repository
+3. Vercel auto-detects Next.js - accept the defaults
+4. Configure Environment Variables:
+
+```plaintext
+NEXT_PUBLIC_API_URL=https://your-project.onrender.com
+```
+
+5. Click "Deploy"
+
+### 1.3 Configure Build Settings
+
+Vercel should auto-detect, but verify these settings:
+
+```yaml
+Framework Preset: Next.js
+Build Command: npm run build (or yarn build)
+Output Directory: .next
+Install Command: npm install (or yarn install)
+```
+
+### 1.4 Verify Deployment
+
+1. Wait for build to complete (2-3 minutes)
+2. Click the generated URL (e.g., `your-project.vercel.app`)
+3. Verify the frontend loads (backend won't work yet)
+
+---
+
+## 🚀 Step 2: Deploy Backend to Render
+
+### 2.1 Create Render Account
+
+1. Go to [render.com](https://render.com)
+2. Click "Get Started" → "GitHub"
+3. Authorize Render to access your GitHub repository
+4. Complete account setup
+
+### 2.2 Create PostgreSQL Database
+
+1. From Render dashboard, click "New +" → "PostgreSQL"
+2. Configure:
+
+```yaml
+Name: mission-security-db
+Database: mission_security
+User: (auto-generated)
+Region: Oregon (US West) - closest to Vercel
+PostgreSQL Version: 15
+Plan: Free
+```
+
+3. Click "Create Database"
+4. Wait for creation (1-2 minutes)
+5. **Copy the "Internal Database URL"** - you'll need this
+
+### 2.3 Create Web Service for FastAPI
+
+1. Click "New +" → "Web Service"
+2. Connect your GitHub repository
+3. Configure:
+
+```yaml
+Name: mission-security-api
+Region: Oregon (US West) - same as database
+Branch: main
+Root Directory: backend (or wherever your FastAPI code lives)
+Runtime: Python 3
+Build Command: pip install -r requirements.txt
+Start Command: uvicorn main:app --host 0.0.0.0 --port $PORT
+Plan: Free
+```
+
+4. Add Environment Variables:
+
+```plaintext
+DATABASE_URL=[Paste Internal Database URL from step 2.2]
+ALLOWED_ORIGINS=https://your-project.vercel.app
+PYTHON_VERSION=3.11
+```
+
+5. Click "Create Web Service"
+
+### 2.4 Verify Backend Deployment
+
+1. Wait for build to complete (5-10 minutes on free tier)
+2. Visit `https://your-project.onrender.com/docs`
+3. You should see the FastAPI Swagger documentation
+4. Test a simple endpoint (e.g., health check)
+
+---
+
+## 🚀 Step 3: Connect Frontend to Backend
+
+### 3.1 Update Vercel Environment Variables
+
+1. Go to Vercel dashboard → Your Project → Settings → Environment Variables
+2. Update `NEXT_PUBLIC_API_URL`:
+
+```plaintext
+NEXT_PUBLIC_API_URL=https://your-project.onrender.com
+```
+
+3. Click "Save"
+
+### 3.2 Redeploy Frontend
+
+1. Go to Deployments tab
+2. Click "..." on latest deployment → "Redeploy"
+3. Wait for deployment (1-2 minutes)
+
+### 3.3 Update Backend CORS
+
+1. Go to Render dashboard → Your Web Service → Environment
+2. Ensure `ALLOWED_ORIGINS` includes your Vercel URL:
+
+```plaintext
+ALLOWED_ORIGINS=https://your-project.vercel.app
+```
+
+3. The service will automatically redeploy
+
+---
+
+## 🔧 Step 4: Configure CORS in FastAPI
+
+Update your FastAPI `main.py` to handle production CORS:
+
+```python
+# backend/main.py
+import os
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI(title="Mission Security Simulator API")
+
+# Get allowed origins from environment variable
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,  # Your Vercel frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "environment": os.getenv("ENVIRONMENT", "development")}
+```
+
+---
+
+## 🔧 Step 5: Configure Next.js API Calls
+
+Update your Next.js API configuration:
+
+```typescript
+// frontend/lib/api.ts
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+export async function fetchFromAPI(endpoint: string, options?: RequestInit) {
+  const url = `${API_BASE_URL}${endpoint}`;
+  
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options?.headers,
+    },
+  });
+  
+  if (!response.ok) {
+    throw new Error(`API Error: ${response.status}`);
+  }
+  
+  return response.json();
+}
+```
+
+---
+
+## ✅ Step 6: End-to-End Testing
+
+### 6.1 Test the Full Flow
+
+1. Open your Vercel URL in browser
+2. Create a new architecture
+3. Add components and data flows
+4. Save the architecture
+5. Run an attack simulation
+6. Verify results display correctly
+
+### 6.2 Deployment Checklist
+
+```markdown
+## Pre-Deployment Checklist
+- [ ] All tests passing locally
+- [ ] Environment variables documented
+- [ ] CORS configured for production URLs
+- [ ] Database migrations ready
+
+## Vercel (Frontend)
+- [ ] GitHub repo connected
+- [ ] Build successful
+- [ ] Environment variables set
+- [ ] HTTPS working
+- [ ] No console errors
+
+## Render (Backend)
+- [ ] GitHub repo connected
+- [ ] Build successful
+- [ ] Environment variables set
+- [ ] PostgreSQL created
+- [ ] Database connected
+- [ ] /docs endpoint accessible
+
+## Integration
+- [ ] Frontend can reach backend
+- [ ] Database operations work
+- [ ] Attack simulation completes
+- [ ] All features functional
+
+## Final Verification
+- [ ] Test in Chrome, Firefox, Safari
+- [ ] Test on mobile device
+- [ ] No CORS errors in console
+- [ ] Performance acceptable
+```
+
+---
+
+## 🔄 Continuous Deployment
+
+Both Vercel and Render support automatic deployments:
+
+### Vercel Auto-Deploy
+- Every push to `main` triggers a new deployment
+- Preview deployments created for pull requests
+- Instant rollback available
+
+### Render Auto-Deploy
+- Every push to `main` triggers a new deployment
+- Can be disabled during development
+- Manual deployment also available
+
+### Recommended Workflow
+
+```
+1. Develop locally
+2. Test locally (all tests pass)
+3. Push to feature branch
+4. Create Pull Request
+5. Vercel creates preview deployment
+6. Review and test preview
+7. Merge to main
+8. Both Vercel and Render auto-deploy
+9. Verify production
+```
+
+---
+
+## 🛠️ Troubleshooting Common Issues
+
+### Frontend Not Loading
+
+**Symptom:** Vercel deployment succeeds but page is blank
+
+**Solutions:**
+- Check browser console for errors
+- Verify build output in Vercel logs
+- Check that `NEXT_PUBLIC_API_URL` is set correctly
+
+### CORS Errors
+
+**Symptom:** "Access-Control-Allow-Origin" errors in console
+
+**Solutions:**
+- Verify `ALLOWED_ORIGINS` environment variable on Render
+- Ensure the Vercel URL is spelled correctly (no trailing slash)
+- Check FastAPI CORS middleware configuration
+
+### Database Connection Failed
+
+**Symptom:** Backend returns 500 errors, logs show connection refused
+
+**Solutions:**
+- Use Internal Database URL (not External) for Render-to-Render connections
+- Verify `DATABASE_URL` environment variable is set
+- Check PostgreSQL is running (Render dashboard shows status)
+
+### Slow Cold Starts
+
+**Symptom:** First request takes 30+ seconds
+
+**Explanation:** Free tier services "sleep" after inactivity
+
+**Solutions:**
+- This is normal for free tier
+- Warn professor/grader about initial delay
+- Consider upgrading to paid tier for demo day ($7/month)
+
+### Build Failures
+
+**Symptom:** Deployment fails during build step
+
+**Solutions:**
+- Check build logs for specific error
+- Ensure all dependencies in requirements.txt/package.json
+- Verify Python/Node version matches local development
+
+---
+
+## 📝 README Updates for Deployment
+
+Add this section to your project README:
+
+```markdown
+## 🌐 Live Deployment
+
+**Frontend (Vercel):** https://your-project.vercel.app
+
+**Backend API (Render):** https://your-project.onrender.com
+
+**API Documentation:** https://your-project.onrender.com/docs
+
+### Note on Cold Starts
+The backend uses Render's free tier, which may sleep after 15 minutes of inactivity.
+The first request after sleeping may take 30-60 seconds to respond.
+Subsequent requests will be fast.
+
+### Running Locally
+See [Local Development Setup](#local-development-setup) below.
+```
 
 ---
 
@@ -2418,6 +2885,8 @@ Your project is graded on **THREE ABET outcomes:**
 - [ ] Side-by-side comparison view working
 - [ ] Improvement % calculated correctly
 - [ ] RD updated with new use cases
+- [ ] 🌐 Create Vercel account & connect GitHub
+- [ ] 🌐 Create Render account & connect GitHub
 
 **Week 15:**
 
@@ -2426,13 +2895,21 @@ Your project is graded on **THREE ABET outcomes:**
 - [ ] 85%+ test coverage achieved
 - [ ] RD v3 complete with traceability matrix
 - [ ] IT v3 complete with deployment guide
+- [ ] 🌐 Configure CORS for production URLs
+- [ ] 🌐 Set up environment variables for production
+- [ ] 🌐 Begin backend deployment to Render
 
 **Week 16:**
 
 - [ ] Final bug fixes
 - [ ] Code cleanup
-- [ ] Demo video recorded
+- [ ] Demo video recorded (using LIVE deployed app!)
 - [ ] Progress report finalized
+- [ ] 🌐 Frontend deployed to Vercel (public URL working)
+- [ ] 🌐 Backend deployed to Render (API accessible)
+- [ ] 🌐 PostgreSQL database created on Render
+- [ ] 🌐 End-to-end testing on live deployment
+- [ ] 🌐 Live URLs documented in README
 
 **Week 17:**
 
@@ -2440,6 +2917,9 @@ Your project is graded on **THREE ABET outcomes:**
 - [ ] All team members submit Teammate Evals
 - [ ] Live class presentation prepared
 - [ ] Practice demo run-through
+- [ ] 🌐 Verify live deployment still working
+- [ ] 🌐 Submit live URLs with Canvas submission
+- [ ] 🌐 Demo uses live deployment (NOT localhost)
 
 ---
 
@@ -2455,6 +2935,12 @@ Your project is graded on **THREE ABET outcomes:**
 - IT Template: (from Canvas)
 - Progress Report Template: (from Canvas)
 
+## 🌐 Deployment Links (Update After Deploy)
+
+- **Live Frontend:** https://your-project.vercel.app
+- **Live Backend API:** https://your-project.onrender.com
+- **API Documentation:** https://your-project.onrender.com/docs
+
 ## Tech Stack Quick Links
 
 - Next.js: https://nextjs.org/
@@ -2464,12 +2950,21 @@ Your project is graded on **THREE ABET outcomes:**
 - PostgreSQL: https://www.postgresql.org/
 - Docker: https://www.docker.com/
 
+## 🌐 Deployment Platform Links
+
+- Vercel (Frontend Hosting): https://vercel.com/
+- Render (Backend + Database): https://render.com/
+- Vercel Docs: https://vercel.com/docs
+- Render Docs: https://render.com/docs
+
 ## Documentation to Read
 
 - FastAPI Tutorial
 - React Flow Examples
 - SQLAlchemy ORM
 - pytest Best Practices
+- **Vercel Next.js Deployment Guide**
+- **Render FastAPI Deployment Guide**
 
 ---
 
@@ -2485,6 +2980,10 @@ You've succeeded when:
 - ✅ Each person contributes equally
 - ✅ Demo video tells a compelling story
 - ✅ Project demonstrates defense industry relevance
+- ✅ 🌐 **Live deployment accessible at public URLs**
+- ✅ 🌐 **Frontend hosted on Vercel**
+- ✅ 🌐 **Backend API hosted on Render**
+- ✅ 🌐 **Database hosted on Render PostgreSQL**
 - ✅ You're proud of what you've built
 
 ## Common Pitfalls to Avoid
@@ -2504,7 +3003,16 @@ You've succeeded when:
 - ❌ Don't: Skip testing
 - ✅ Do: Test constantly (unit, integration, manual)
 
-## Questions to Ask
+- ❌ Don't: Wait until Week 17 to deploy
+- ✅ Do: Start deployment setup in Week 14, deploy in Week 15-16
+
+- ❌ Don't: Demo using localhost
+- ✅ Do: Demo the LIVE deployed application
+
+- ❌ Don't: Forget to configure CORS for production
+- ✅ Do: Test production URLs end-to-end before demo
+
+## Questions to Ask Yourself
 
 - Is my code readable to someone else?
 - Have I tested edge cases?
@@ -2512,7 +3020,7 @@ You've succeeded when:
 - Am I contributing equally?
 - Does the product solve the stated problem?
 - Would I be proud to show this in an interview?
+- 🌐 **Is our live deployment working right now?**
+- 🌐 **Did we test the production URLs today?**
 
 ---
-
-**Questions? Ask in standup or on Discord. 🚀**
