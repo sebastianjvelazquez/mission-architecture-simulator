@@ -1,0 +1,65 @@
+name: Task/User Story
+description: Create a development task or user story
+title: "[TASK] "
+labels: ["task"]
+body:
+  - type: dropdown
+    id: increment
+    attributes:
+      label: Increment
+      description: Which project increment is this for?
+      options:
+        - "Increment 1 (Feb 23)"
+        - "Increment 2 (Mar 23)"
+        - "Increment 3 (Apr 27)"
+        - General/Ongoing
+    validations:
+      required: true
+
+  - type: dropdown
+    id: assignee-role
+    attributes:
+      label: Assigned Role
+      description: Which role should handle this?
+      options:
+        - Person 1 (Frontend Lead)
+        - Person 2 (Backend/Simulation Lead)
+        - Person 3 (Database/Integration Lead)
+        - Person 4 (Testing/DevOps/Documentation Lead)
+        - Team (Everyone)
+    validations:
+      required: true
+
+  - type: textarea
+    id: user-story
+    attributes:
+      label: User Story
+      description: "Format: As a [user], I want [goal] so that [reason]"
+      placeholder: "As a mission planner, I want to save my architecture so that I can load it later"
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: What must be true for this to be complete?
+      placeholder: |
+        - [ ] Feature works as expected
+        - [ ] Tests written and passing
+        - [ ] Documentation updated
+    validations:
+      required: true
+
+  - type: textarea
+    id: technical-notes
+    attributes:
+      label: Technical Notes
+      description: Any technical details, API endpoints, file locations, etc.
+
+  - type: input
+    id: estimate
+    attributes:
+      label: Time Estimate
+      description: Estimated hours to complete
+      placeholder: "3-5 hours"
