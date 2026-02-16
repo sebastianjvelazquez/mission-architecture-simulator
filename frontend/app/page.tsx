@@ -8,18 +8,52 @@ import ReactFlow, {
   applyNodeChanges,
   NodeChange,
   Node,
+  Handle,
+  Position,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import Navbar from "@/components/Navbar";
 
+// Custom Node Component with 4 handles (top, right, bottom, left)
+function CustomNode({ data }: { data: { label: string } }) {
+  return (
+    <div
+      style={{
+        padding: "10px 20px",
+        border: "1px solid #777",
+        borderRadius: "5px",
+        background: "white",
+      }}
+    >
+      {/* Top Handle */}
+      <Handle type="target" position={Position.Top} id="top" />
+      
+      {/* Right Handle */}
+      <Handle type="source" position={Position.Right} id="right" />
+      
+      {/* Bottom Handle */}
+      <Handle type="source" position={Position.Bottom} id="bottom" />
+      
+      {/* Left Handle */}
+      <Handle type="target" position={Position.Left} id="left" />
+      
+      <div>{data.label}</div>
+    </div>
+  );
+}
+
+// Define node types
+const nodeTypes = {
+  custom: CustomNode,
+};
+
 export default function Home() {
-  // State for nodes and edges
   const [nodes, setNodes] = useState<Node<{ label: string }>[]>([
     {
       id: "1",
       position: { x: 100, y: 100 },
       data: { label: "Sensor 1" },
-      type: "default",
+      type: "custom", // Changed from "default" to "custom"
     },
   ]);
 
@@ -64,7 +98,7 @@ export default function Home() {
             id,
             position,
             data: { label: type },
-            type: "default",
+            type: "custom", // Changed from "default" to "custom"
           },
         ];
       });
@@ -74,27 +108,31 @@ export default function Home() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      {/* NAVBAR */}
       <Navbar />
 
-      {/* MAIN */}
+      {/* SIDEBAR */}
       <div style={{ display: "flex", flex: 1 }}>
-        {/* SIDEBAR */}
         <div
           style={{
             width: "220px",
-            backgroundColor: "#1C1C1C",
+            backgroundColor: "#00141f",
             padding: "16px",
             boxSizing: "border-box",
             color: "#FFFFFF",
           }}
         >
-          <h3 style={{ margin: 0 }}>Components</h3>
-          <p style={{ fontSize: "0.85rem", color: "#B3B3B3" }}>
-            Drag a component and drop it onto the canvas.
-            <br></br>
-            <br></br>
-          </p>
+          <div>
+            <p style={{ fontSize: "0.85rem", color: "#B3B3B3" }}>
+              Drag a component and drop it onto the canvas.
+              <br></br>
+              <br></br>
+            </p>
+            <p style={{ fontSize: "0.85rem", color: "#B3B3B3" }}>
+              To delete a component, select and press the delete key.
+              <br></br>
+              <br></br>
+            </p>
+          </div>
           <ul
             style={{
               listStyle: "none",
@@ -113,11 +151,11 @@ export default function Home() {
                   onDragStart={(event) => onDragStart(event, label)}
                   style={{
                     width: "100%",
-                    padding: "12px",
-                    backgroundColor: "#2E2E2E",
+                    padding: "10px",
+                    backgroundColor: "#1A1A1A",
                     color: "#FFFFFF",
                     border: "1px solid #3A3A3A",
-                    borderRadius: "6px",
+                    borderRadius: "12px",
                     textAlign: "left",
                     cursor: "grab",
                   }}
@@ -129,7 +167,6 @@ export default function Home() {
           </ul>
         </div>
 
-        {/*CANVAS/GRID*/}
         <div
           ref={reactFlowWrapper}
           style={{ flex: 1, position: "relative", borderLeft: "1px solid #ccc" }}
@@ -141,6 +178,7 @@ export default function Home() {
             onInit={setReactFlowInstance}
             onDrop={onDrop}
             onDragOver={onDragOver}
+            nodeTypes={nodeTypes} // Add this line
             fitView
           >
             <Background />

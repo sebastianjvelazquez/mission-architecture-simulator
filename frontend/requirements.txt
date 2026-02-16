@@ -1,0 +1,9 @@
+# "npm install workflow" in frontend folder for workflow
+# start app with "npm run dev" in frontend folder
+# ES7+ React plugin
+# Prettier plugin
+# Prettier ESLint plugin
+# Tailwind CSS IntelliSense plugin
+# Tailwind Docs plugin
+# Thunder Client plugin
+# CoPilot plugin
