@@ -22,7 +22,7 @@ function CustomNode({ data }: { data: { label: string } }) {
         padding: "10px 20px",
         border: "1px solid #777",
         borderRadius: "5px",
-        background: "white",
+        background: "black",
       }}
     >
       {/* Top Handle */}
@@ -106,6 +106,11 @@ export default function Home() {
     [reactFlowInstance]
   );
 
+  const handleDeleteAll = () => {
+    setNodes([]);
+    setEdges([]);
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       <Navbar />
@@ -115,20 +120,38 @@ export default function Home() {
         <div
           style={{
             width: "220px",
-            backgroundColor: "#00141f",
+            backgroundColor: "#141414",
             padding: "16px",
             boxSizing: "border-box",
             color: "#FFFFFF",
+            position: "relative",
           }}
         >
           <div>
+            <button
+              onClick={handleDeleteAll}
+              style={{
+                position: "absolute",
+                bottom: "16px",
+                right: "16px",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              <img
+                src="/TrashCanPNG.png"
+                alt="Delete all"
+                style={{ width: "22px", height: "22px" }}
+              />
+            </button>
             <p style={{ fontSize: "0.85rem", color: "#B3B3B3" }}>
-              Drag a component and drop it onto the canvas.
+              To add a component, drag and drop it onto the canvas.
               <br></br>
               <br></br>
             </p>
             <p style={{ fontSize: "0.85rem", color: "#B3B3B3" }}>
-              To delete a component, select and press the delete key.
+              To delete a component, select and press delete key, or press the trash can icon to delete all.
               <br></br>
               <br></br>
             </p>
@@ -151,12 +174,13 @@ export default function Home() {
                   onDragStart={(event) => onDragStart(event, label)}
                   style={{
                     width: "100%",
+                    height: "100px",
                     padding: "10px",
                     backgroundColor: "#1A1A1A",
                     color: "#FFFFFF",
                     border: "1px solid #3A3A3A",
                     borderRadius: "12px",
-                    textAlign: "left",
+                    textAlign: "center",
                     cursor: "grab",
                   }}
                 >

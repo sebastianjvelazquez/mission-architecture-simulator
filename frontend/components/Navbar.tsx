@@ -14,20 +14,18 @@ export default function Navbar() {
     style={{
       width: "100%",
       height: "80px",
-      backgroundColor: "#000e14",
+      backgroundColor: "#080808",
       color: "white",
       display: "flex",
       alignItems: "center",
       padding: "0 20px",
       boxSizing: "border-box",
-      fontWeight: "normal",
       justifyContent: "center",
-      fontSize: "20px"
     }}>
       <Image 
-        src="/MAS.png" 
+        src="/MissionSystemsArchitecture.png" 
         alt="Logo" 
-        width={150}
+        width={500}
         height={500}
         style={{ marginRight: "10px"}}
       />
