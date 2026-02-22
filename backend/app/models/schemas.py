@@ -109,6 +109,21 @@ class FlowResponse(BaseModel):
 
 
 
+class FlowInlineCreate(BaseModel):
+    """Flow create schema for inline architecture POST. References components by string component_id."""
+
+    source_component_id: str = Field(..., description="component_id of the source component")
+    target_component_id: str = Field(..., description="component_id of the target component")
+    data_type: Optional[str] = Field(None, description="Type of data transmitted")
+    cia_requirement: Optional[str] = Field(
+        None, description="CIA property: confidentiality | integrity | availability"
+    )
+    latency_sensitivity: Optional[str] = Field(
+        None, description="Latency sensitivity: low | medium | high"
+    )
+    properties: Optional[dict[str, Any]] = Field(default_factory=dict)
+
+
 class ArchitectureCreate(BaseModel):
 
     name: str = Field(..., description="Architecture name")
@@ -120,9 +135,9 @@ class ArchitectureCreate(BaseModel):
         default_factory=list,
         description="Components to create inline with the architecture",
     )
-    flows: list[FlowCreate] = Field(
+    flows: list[FlowInlineCreate] = Field(
         default_factory=list,
-        description="Flows to create inline with the architecture",
+        description="Flows referencing components by component_id string",
     )
 
 
