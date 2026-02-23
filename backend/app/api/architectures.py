@@ -3,7 +3,7 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session, selectinload
 
 from app.database import get_db
@@ -26,6 +26,20 @@ _ARCH_LOAD_OPTIONS = [
 ]
 
 
+def _integrity_error_detail(exc: IntegrityError) -> str:
+    """Return a human-readable constraint violation message from an IntegrityError."""
+    msg = str(exc.orig).lower() if exc.orig else str(exc).lower()
+    if "unique" in msg or "duplicate" in msg:
+        return "A record with these values already exists (unique constraint violation)."
+    if "not null" in msg or "null value" in msg or "notnull" in msg:
+        return "A required field is missing (not-null constraint violation)."
+    if "foreign key" in msg or "foreignkey" in msg:
+        return "Referenced record does not exist (foreign key constraint violation)."
+    if "check" in msg:
+        return "A field value is out of the allowed range (check constraint violation)."
+    return "Database constraint violation."
+
+
 @router.post(
     "",
     response_model=ArchitectureResponse,
@@ -44,7 +58,7 @@ def create_architecture(
     component_ids = [c.component_id for c in payload.components]
     if len(component_ids) != len(set(component_ids)):
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Duplicate component_id values in request.",
         )
 
@@ -52,12 +66,12 @@ def create_architecture(
     for flow in payload.flows:
         if flow.source_component_id not in component_id_set:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=f"Flow source_component_id '{flow.source_component_id}' not found in components.",
             )
         if flow.target_component_id not in component_id_set:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=f"Flow target_component_id '{flow.target_component_id}' not found in components.",
             )
 
@@ -102,6 +116,15 @@ def create_architecture(
         db.refresh(arch)
         logger.info("Architecture created: id=%d name='%s'", arch.id, arch.name)
         return ArchitectureResponse.model_validate(arch)
+
+    except IntegrityError as exc:
+        db.rollback()
+        detail = _integrity_error_detail(exc)
+        logger.warning("Constraint violation creating architecture: %s", exc.orig)
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=detail,
+        ) from exc
 
     except SQLAlchemyError as exc:
         db.rollback()
