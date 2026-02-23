@@ -1,18 +1,29 @@
-"""POST /architectures -- save a new architecture with its components and flows."""
+"""Architecture CRUD endpoints: POST, GET /architectures, GET /architectures/{id}."""
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.database import get_db
 from app.models.architecture import Architecture, Component, Flow
-from app.models.schemas import ArchitectureCreate, ArchitectureResponse
+from app.models.schemas import (
+    ArchitectureCreate,
+    ArchitectureResponse,
+    ArchitectureSummaryResponse,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/architectures", tags=["architectures"])
+
+# Reusable load options — eager-load components and their flows in two
+# additional SELECT IN queries instead of a JOIN, avoiding a Cartesian product.
+_ARCH_LOAD_OPTIONS = [
+    selectinload(Architecture.components),
+    selectinload(Architecture.flows),
+]
 
 
 @router.post(
@@ -21,17 +32,15 @@ router = APIRouter(prefix="/architectures", tags=["architectures"])
     status_code=status.HTTP_201_CREATED,
     summary="Save a new architecture",
     description=(
-        "Creates an architecture record together with all of its components and "
-        "flows in a single transaction. Flows reference components by their "
-        "string `component_id` (the frontend UUID/slug), which is resolved to "
-        "the database integer FK after components are inserted."
+        "Creates an architecture together with all components and flows in a "
+        "single transaction. Flows reference components by string component_id, "
+        "which is resolved to the database integer FK after insertion."
     ),
 )
 def create_architecture(
     payload: ArchitectureCreate,
     db: Session = Depends(get_db),
 ) -> ArchitectureResponse:
-    # Build component_id -> DB Component map for flows resolution.
     component_ids = [c.component_id for c in payload.components]
     if len(component_ids) != len(set(component_ids)):
         raise HTTPException(
@@ -39,7 +48,6 @@ def create_architecture(
             detail="Duplicate component_id values in request.",
         )
 
-    # Validate flow references before touching the database.
     component_id_set = set(component_ids)
     for flow in payload.flows:
         if flow.source_component_id not in component_id_set:
@@ -60,9 +68,8 @@ def create_architecture(
             properties=payload.properties or {},
         )
         db.add(arch)
-        db.flush()  # Populate arch.id without committing.
+        db.flush()
 
-        # Insert components and build slug -> DB id map.
         slug_to_db_id: dict[str, int] = {}
         for c in payload.components:
             component = Component(
@@ -76,10 +83,9 @@ def create_architecture(
                 properties=c.properties or {},
             )
             db.add(component)
-            db.flush()  # Populate component.id.
+            db.flush()
             slug_to_db_id[c.component_id] = component.id
 
-        # Insert flows using resolved DB IDs.
         for f in payload.flows:
             flow = Flow(
                 architecture_id=arch.id,
@@ -104,3 +110,72 @@ def create_architecture(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to save architecture. Database error.",
         ) from exc
+
+
+@router.get(
+    "",
+    response_model=list[ArchitectureSummaryResponse],
+    summary="List all architectures",
+    description=(
+        "Returns a paginated list of architectures (name, description, timestamps). "
+        "Use skip and limit for pagination. Components and flows are not included "
+        "in this response — use GET /architectures/{id} for the full record."
+    ),
+)
+def list_architectures(
+    skip: int = Query(default=0, ge=0, description="Number of records to skip"),
+    limit: int = Query(default=100, ge=1, le=500, description="Maximum records to return"),
+    db: Session = Depends(get_db),
+) -> list[ArchitectureSummaryResponse]:
+    try:
+        architectures = (
+            db.query(Architecture)
+            .order_by(Architecture.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+        return [ArchitectureSummaryResponse.model_validate(a) for a in architectures]
+
+    except SQLAlchemyError as exc:
+        logger.error("Database error listing architectures: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve architectures. Database error.",
+        ) from exc
+
+
+@router.get(
+    "/{architecture_id}",
+    response_model=ArchitectureResponse,
+    summary="Get a specific architecture",
+    description=(
+        "Returns a single architecture including all components and flows. "
+        "Uses SELECT IN eager loading to avoid N+1 queries."
+    ),
+)
+def get_architecture(
+    architecture_id: int,
+    db: Session = Depends(get_db),
+) -> ArchitectureResponse:
+    try:
+        arch = (
+            db.query(Architecture)
+            .options(*_ARCH_LOAD_OPTIONS)
+            .filter(Architecture.id == architecture_id)
+            .first()
+        )
+    except SQLAlchemyError as exc:
+        logger.error("Database error fetching architecture %d: %s", architecture_id, exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve architecture. Database error.",
+        ) from exc
+
+    if arch is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Architecture with id {architecture_id} not found.",
+        )
+
+    return ArchitectureResponse.model_validate(arch)
