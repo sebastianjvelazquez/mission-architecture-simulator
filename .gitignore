@@ -43,3 +43,7 @@ alembic/versions/*.py
 
 # Logs
 *.log
+
+# Temp files - do not commit
+VIDEO_SCRIPT.md
+GITHUB_ISSUES_INCREMENT_1.md
