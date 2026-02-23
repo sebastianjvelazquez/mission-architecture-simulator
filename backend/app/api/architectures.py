@@ -1,18 +1,27 @@
-"""POST /architectures -- save a new architecture with its components and flows."""
+"""CRUD endpoints for architectures: POST, GET list, GET by id."""
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.database import get_db
 from app.models.architecture import Architecture, Component, Flow
-from app.models.schemas import ArchitectureCreate, ArchitectureResponse
+from app.models.schemas import (
+    ArchitectureCreate,
+    ArchitectureResponse,
+    ArchitectureSummaryResponse,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/architectures", tags=["architectures"])
+
+_ARCH_LOAD_OPTIONS = [
+    selectinload(Architecture.components),
+    selectinload(Architecture.flows),
+]
 
 
 @router.post(
@@ -104,3 +113,62 @@ def create_architecture(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to save architecture. Database error.",
         ) from exc
+
+
+@router.get(
+    "",
+    response_model=list[ArchitectureSummaryResponse],
+    summary="List all architectures",
+)
+def list_architectures(
+    skip: int = Query(default=0, ge=0, description="Number of records to skip"),
+    limit: int = Query(default=100, ge=1, le=500, description="Maximum records to return"),
+    db: Session = Depends(get_db),
+) -> list[ArchitectureSummaryResponse]:
+    try:
+        rows = (
+            db.query(Architecture)
+            .order_by(Architecture.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+        return [ArchitectureSummaryResponse.model_validate(r) for r in rows]
+    except SQLAlchemyError as exc:
+        logger.error("Database error listing architectures: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve architectures. Database error.",
+        ) from exc
+
+
+@router.get(
+    "/{architecture_id}",
+    response_model=ArchitectureResponse,
+    summary="Get a single architecture with components and flows",
+)
+def get_architecture(
+    architecture_id: int,
+    db: Session = Depends(get_db),
+) -> ArchitectureResponse:
+    try:
+        arch = (
+            db.query(Architecture)
+            .options(*_ARCH_LOAD_OPTIONS)
+            .filter(Architecture.id == architecture_id)
+            .first()
+        )
+    except SQLAlchemyError as exc:
+        logger.error("Database error fetching architecture %d: %s", architecture_id, exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve architecture. Database error.",
+        ) from exc
+
+    if arch is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Architecture with id {architecture_id} not found.",
+        )
+
+    return ArchitectureResponse.model_validate(arch)
