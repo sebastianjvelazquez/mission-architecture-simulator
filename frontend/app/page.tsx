@@ -153,14 +153,17 @@ export default function Home() {
   };
 
   // CONNECTIONS BETWEEN NODES (ARROWS)
+  // NOTE: ON LABEL SOURCE IS LEFT NODE TARGET IS RIGHT NODE ALWAYS, REGARDLESS OF WHERE YOU CONNECT TO THE NODE
   const onConnect = useCallback(
     (connection: Connection) => {
       setEdges((eds) => addEdge({
         ...connection,
-        
         markerEnd: {
           type: MarkerType.ArrowClosed,
         },
+        label: `${connection.sourceHandle} ${connection.source} → ${connection.target}`,
+        labelStyle: { fill: "#fff", fontWeight: 500 },
+        labelBgStyle: { fill: "#141414"},
       }, eds));
     },
     []
