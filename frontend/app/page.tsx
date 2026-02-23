@@ -6,16 +6,22 @@ import ReactFlow, {
   Controls,
   ReactFlowInstance,
   applyNodeChanges,
+  applyEdgeChanges,
   NodeChange,
+  EdgeChange,
   Node,
   Handle,
   Position,
+  Edge,
+  addEdge,
+  Connection,
+  MarkerType,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import Navbar from "@/components/Navbar";
 
-// Custom Node Component with 4 handles (top, right, bottom, left)
-function CustomNode({ data }: { data: { label: string } }) {
+// ALL CUSTOM NODES
+function ProcessNode({ data }: { data: { label: string } }) {
   return (
     <div
       style={{
@@ -42,22 +48,98 @@ function CustomNode({ data }: { data: { label: string } }) {
   );
 }
 
-// Define node types
+function StoreNode({ data }: { data: { label: string } }) {
+  return (
+    <div
+      style={{
+        padding: "10px 20px",
+        border: "1px solid #777",
+        borderRadius: "5px",
+        background: "black",
+      }}
+    >
+      {/* Top Handle */}
+      <Handle type="target" position={Position.Top} id="top" />
+      
+      {/* Right Handle */}
+      <Handle type="source" position={Position.Right} id="right" />
+      
+      {/* Bottom Handle */}
+      <Handle type="source" position={Position.Bottom} id="bottom" />
+      
+      {/* Left Handle */}
+      <Handle type="target" position={Position.Left} id="left" />
+      
+      <div>{data.label}</div>
+    </div>
+  );
+}
+
+function ActorNode({ data }: { data: { label: string } }) {
+  return (
+    <div
+      style={{
+        padding: "10px 20px",
+        border: "1px solid #777",
+        borderRadius: "5px",
+        background: "black",
+      }}
+    >
+      {/* Top Handle */}
+      <Handle type="target" position={Position.Top} id="top" />
+      
+      {/* Right Handle */}
+      <Handle type="source" position={Position.Right} id="right" />
+      
+      {/* Bottom Handle */}
+      <Handle type="source" position={Position.Bottom} id="bottom" />
+      
+      {/* Left Handle */}
+      <Handle type="target" position={Position.Left} id="left" />
+      
+      <div>{data.label}</div>
+    </div>
+  );
+}
+
+function FlowNode({ data }: { data: { label: string } }) {
+  return (
+    <div
+      style={{
+        padding: "10px 20px",
+        border: "1px solid #777",
+        borderRadius: "5px",
+        background: "black",
+      }}
+    >
+      {/* Top Handle */}
+      <Handle type="target" position={Position.Top} id="top" />
+      
+      {/* Right Handle */}
+      <Handle type="source" position={Position.Right} id="right" />
+      
+      {/* Bottom Handle */}
+      <Handle type="source" position={Position.Bottom} id="bottom" />
+      
+      {/* Left Handle */}
+      <Handle type="target" position={Position.Left} id="left" />
+      
+      <div>{data.label}</div>
+    </div>
+  );
+}
+
+// DEFINE NODE TYPES
 const nodeTypes = {
-  custom: CustomNode,
+  Process: ProcessNode,
+  Store: StoreNode,
+  Actor: ActorNode,
+  "Data Flow": FlowNode,
 };
 
 export default function Home() {
-  const [nodes, setNodes] = useState<Node<{ label: string }>[]>([
-    {
-      id: "1",
-      position: { x: 100, y: 100 },
-      data: { label: "Sensor 1" },
-      type: "custom", // Changed from "default" to "custom"
-    },
-  ]);
-
-  const [edges, setEdges] = useState([]);
+  const [nodes, setNodes] = useState<Node<{ label: string }>[]>([]);
+  const [edges, setEdges] = useState<Edge[]>([]);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] =
     useState<ReactFlowInstance | null>(null);
@@ -65,6 +147,24 @@ export default function Home() {
   const onNodesChange = (changes: NodeChange[]) => {
     setNodes((nds) => applyNodeChanges(changes, nds));
   };
+
+  const onEdgesChange = (changes: EdgeChange[]) => {
+    setEdges((eds) => applyEdgeChanges(changes, eds));
+  };
+
+  // CONNECTIONS BETWEEN NODES (ARROWS)
+  const onConnect = useCallback(
+    (connection: Connection) => {
+      setEdges((eds) => addEdge({
+        ...connection,
+        
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+        },
+      }, eds));
+    },
+    []
+  );
 
   const onDragStart = useCallback((event: React.DragEvent, type: string) => {
     event.dataTransfer.setData("application/reactflow", type);
@@ -98,7 +198,7 @@ export default function Home() {
             id,
             position,
             data: { label: type },
-            type: "custom", // Changed from "default" to "custom"
+            type,
           },
         ];
       });
@@ -166,12 +266,12 @@ export default function Home() {
               gap: "12px",
             }}
           >
-            {["Process", "Store", "Actor", "Data Flow"].map((label) => (
-              <li key={label}>
+            {["Process", "Store", "Actor", "Data Flow"].map((type) => (
+              <li key={type}>
                 <button
                   type="button"
                   draggable
-                  onDragStart={(event) => onDragStart(event, label)}
+                  onDragStart={(event) => onDragStart(event, type)}
                   style={{
                     width: "100%",
                     height: "100px",
@@ -184,7 +284,7 @@ export default function Home() {
                     cursor: "grab",
                   }}
                 >
-                  {label}
+                  {type}
                 </button>
               </li>
             ))}
@@ -199,10 +299,12 @@ export default function Home() {
             nodes={nodes}
             edges={edges}
             onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
             onInit={setReactFlowInstance}
             onDrop={onDrop}
             onDragOver={onDragOver}
-            nodeTypes={nodeTypes} // Add this line
+            nodeTypes={nodeTypes}
             fitView
           >
             <Background />
