@@ -1,10 +1,11 @@
 """FastAPI application entry point."""
 
 import logging
+import time
 from contextlib import asynccontextmanager
 from typing import List
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
@@ -45,6 +46,23 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def log_request_timing(request: Request, call_next):
+    start = time.perf_counter()
+    response = await call_next(request)
+    elapsed_ms = (time.perf_counter() - start) * 1000
+    response.headers["X-Process-Time-Ms"] = f"{elapsed_ms:.1f}"
+    logger.info(
+        "%s %s completed in %.1f ms (status=%d)",
+        request.method,
+        request.url.path,
+        elapsed_ms,
+        response.status_code,
+    )
+    return response
+
 
 app.include_router(architectures_router)
 

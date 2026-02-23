@@ -1,9 +1,10 @@
 """Database engine, session factory, and FastAPI dependency."""
 
 import logging
+import time
 from typing import Generator
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import get_settings
@@ -22,6 +23,26 @@ engine = create_engine(
 )
 
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+
+_SLOW_QUERY_THRESHOLD_MS = 200
+
+
+@event.listens_for(engine, "before_cursor_execute")
+def _before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+    conn.info["query_start_time"] = time.perf_counter()
+
+
+@event.listens_for(engine, "after_cursor_execute")
+def _after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+    elapsed_ms = (time.perf_counter() - conn.info.pop("query_start_time", time.perf_counter())) * 1000
+    if elapsed_ms >= _SLOW_QUERY_THRESHOLD_MS:
+        logger.warning(
+            "Slow query (%.1f ms): %.200s",
+            elapsed_ms,
+            statement,
+        )
+    else:
+        logger.debug("Query OK (%.1f ms)", elapsed_ms)
 
 
 def get_db() -> Generator[Session, None, None]:

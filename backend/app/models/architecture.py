@@ -7,10 +7,10 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
-    Index,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, relationship
@@ -53,6 +53,11 @@ class Architecture(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
         lazy="selectin",
+    )
+
+    __table_args__ = (
+        Index("ix_architectures_name", "name"),
+        Index("ix_architectures_created_at", "created_at"),
     )
 
     def __repr__(self) -> str:

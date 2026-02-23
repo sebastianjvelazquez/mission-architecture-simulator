@@ -1,4 +1,4 @@
-"""Architecture CRUD endpoints: POST, GET /architectures, GET /architectures/{id}."""
+"""CRUD endpoints for architectures: POST, GET list, GET by id."""
 
 import logging
 
@@ -18,8 +18,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/architectures", tags=["architectures"])
 
-# Reusable load options — eager-load components and their flows in two
-# additional SELECT IN queries instead of a JOIN, avoiding a Cartesian product.
 _ARCH_LOAD_OPTIONS = [
     selectinload(Architecture.components),
     selectinload(Architecture.flows),
@@ -32,15 +30,17 @@ _ARCH_LOAD_OPTIONS = [
     status_code=status.HTTP_201_CREATED,
     summary="Save a new architecture",
     description=(
-        "Creates an architecture together with all components and flows in a "
-        "single transaction. Flows reference components by string component_id, "
-        "which is resolved to the database integer FK after insertion."
+        "Creates an architecture record together with all of its components and "
+        "flows in a single transaction. Flows reference components by their "
+        "string `component_id` (the frontend UUID/slug), which is resolved to "
+        "the database integer FK after components are inserted."
     ),
 )
 def create_architecture(
     payload: ArchitectureCreate,
     db: Session = Depends(get_db),
 ) -> ArchitectureResponse:
+    # Build component_id -> DB Component map for flows resolution.
     component_ids = [c.component_id for c in payload.components]
     if len(component_ids) != len(set(component_ids)):
         raise HTTPException(
@@ -48,6 +48,7 @@ def create_architecture(
             detail="Duplicate component_id values in request.",
         )
 
+    # Validate flow references before touching the database.
     component_id_set = set(component_ids)
     for flow in payload.flows:
         if flow.source_component_id not in component_id_set:
@@ -68,8 +69,9 @@ def create_architecture(
             properties=payload.properties or {},
         )
         db.add(arch)
-        db.flush()
+        db.flush()  # Populate arch.id without committing.
 
+        # Insert components and build slug -> DB id map.
         slug_to_db_id: dict[str, int] = {}
         for c in payload.components:
             component = Component(
@@ -83,9 +85,10 @@ def create_architecture(
                 properties=c.properties or {},
             )
             db.add(component)
-            db.flush()
+            db.flush()  # Populate component.id.
             slug_to_db_id[c.component_id] = component.id
 
+        # Insert flows using resolved DB IDs.
         for f in payload.flows:
             flow = Flow(
                 architecture_id=arch.id,
@@ -116,11 +119,6 @@ def create_architecture(
     "",
     response_model=list[ArchitectureSummaryResponse],
     summary="List all architectures",
-    description=(
-        "Returns a paginated list of architectures (name, description, timestamps). "
-        "Use skip and limit for pagination. Components and flows are not included "
-        "in this response — use GET /architectures/{id} for the full record."
-    ),
 )
 def list_architectures(
     skip: int = Query(default=0, ge=0, description="Number of records to skip"),
@@ -128,15 +126,14 @@ def list_architectures(
     db: Session = Depends(get_db),
 ) -> list[ArchitectureSummaryResponse]:
     try:
-        architectures = (
+        rows = (
             db.query(Architecture)
             .order_by(Architecture.created_at.desc())
             .offset(skip)
             .limit(limit)
             .all()
         )
-        return [ArchitectureSummaryResponse.model_validate(a) for a in architectures]
-
+        return [ArchitectureSummaryResponse.model_validate(r) for r in rows]
     except SQLAlchemyError as exc:
         logger.error("Database error listing architectures: %s", exc)
         raise HTTPException(
@@ -148,11 +145,7 @@ def list_architectures(
 @router.get(
     "/{architecture_id}",
     response_model=ArchitectureResponse,
-    summary="Get a specific architecture",
-    description=(
-        "Returns a single architecture including all components and flows. "
-        "Uses SELECT IN eager loading to avoid N+1 queries."
-    ),
+    summary="Get a single architecture with components and flows",
 )
 def get_architecture(
     architecture_id: int,
