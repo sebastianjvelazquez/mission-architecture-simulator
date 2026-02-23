@@ -110,6 +110,7 @@ function FlowNode({ data }: { data: { label: string } }) {
         border: "1px solid #777",
         borderRadius: "5px",
         background: "black",
+        // color: "white",
       }}
     >
       {/* Top Handle */}
@@ -161,13 +162,24 @@ export default function Home() {
         markerEnd: {
           type: MarkerType.ArrowClosed,
         },
-        label: `${connection.sourceHandle} ${connection.source} → ${connection.target}`,
+        label: "",
         labelStyle: { fill: "#fff", fontWeight: 500 },
         labelBgStyle: { fill: "#141414"},
       }, eds));
     },
     []
   );
+
+  const onEdgeDoubleClick = useCallback((_: React.MouseEvent, edge: Edge) => {
+  const newLabel = window.prompt("Enter edge label:", String(edge.label ?? ""));
+  if (newLabel !== null) {
+    setEdges((eds) =>
+      eds.map((e) =>
+        e.id === edge.id ? { ...e, label: newLabel } : e
+        )
+      );
+    }
+  }, []);
 
   const onDragStart = useCallback((event: React.DragEvent, type: string) => {
     event.dataTransfer.setData("application/reactflow", type);
@@ -248,13 +260,18 @@ export default function Home() {
                 style={{ width: "22px", height: "22px" }}
               />
             </button>
-            <p style={{ fontSize: "0.85rem", color: "#B3B3B3" }}>
+            <p style={{ fontSize: "0.7rem", color: "#B3B3B3" }}>
               To add a component, drag and drop it onto the canvas.
               <br></br>
               <br></br>
             </p>
-            <p style={{ fontSize: "0.85rem", color: "#B3B3B3" }}>
+            <p style={{ fontSize: "0.7rem", color: "#B3B3B3" }}>
               To delete a component, select and press delete key, or press the trash can icon to delete all.
+              <br></br>
+              <br></br>
+            </p>
+            <p style={{ fontSize: "0.7rem", color: "#B3B3B3" }}>
+              To name a connection, double click anywhere on the arrow and enter your label.
               <br></br>
               <br></br>
             </p>
@@ -303,6 +320,7 @@ export default function Home() {
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
+            onEdgeDoubleClick={onEdgeDoubleClick}
             onConnect={onConnect}
             onInit={setReactFlowInstance}
             onDrop={onDrop}
