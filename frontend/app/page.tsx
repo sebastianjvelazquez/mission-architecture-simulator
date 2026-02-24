@@ -138,9 +138,265 @@ const nodeTypes = {
   "Data Flow": FlowNode,
 };
 
+// NODE EDIT MODAL COMPONENT
+interface NodeModalProps {
+  isOpen: boolean;
+  nodeType: string;
+  currentName: string;
+  currentCriticality: number;
+  onClose: () => void;
+  onSave: (name: string, criticality: number) => void;
+}
+
+function NodeEditModal({ isOpen, nodeType, currentName, currentCriticality, onClose, onSave }: NodeModalProps) {
+  const [name, setName] = useState(currentName);
+  const [criticality, setCriticality] = useState(currentCriticality);
+
+  // Update state when modal opens with new node data
+  React.useEffect(() => {
+    if (isOpen) {
+      setName(currentName);
+      setCriticality(currentCriticality);
+    }
+  }, [isOpen, currentName, currentCriticality]);
+
+  const handleSave = () => {
+    onSave(name || currentName, criticality);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 1000,
+    }}>
+      <div style={{
+        backgroundColor: "#1A1A1A",
+        padding: "20px",
+        borderRadius: "8px",
+        color: "white",
+        minWidth: "300px",
+      }}>
+        <h3 style={{ marginTop: 0 }}>Node Properties</h3>
+        <br></br>
+        <label style={{ display: "block", marginBottom: "15px" }}>
+          <span>Type:</span>
+          <input
+            type="text"
+            value={nodeType ?? ""}
+            disabled
+            style={{
+              width: "100%",
+              padding: "8px",
+              marginTop: "5px",
+              backgroundColor: "#2A2A2A",
+              color: "#888",
+              border: "1px solid #444",
+              borderRadius: "4px",
+              boxSizing: "border-box",
+            }}
+          />
+        </label>
+
+        <label style={{ display: "block", marginBottom: "15px" }}>
+          <span>Name:</span>
+          <input
+            type="text"
+            value={name ?? ""}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Enter node name"
+            style={{
+              width: "100%",
+              padding: "8px",
+              marginTop: "5px",
+              backgroundColor: "#2A2A2A",
+              color: "white",
+              border: "1px solid #444",
+              borderRadius: "4px",
+              boxSizing: "border-box",
+            }}
+          />
+        </label>
+
+        <label style={{ display: "block", marginBottom: "15px" }}>
+          <span>Criticality:</span>
+          <select
+            value={criticality ?? 1}
+            onChange={(e) => setCriticality(Number(e.target.value))}
+            style={{
+              width: "100%",
+              padding: "8px",
+              marginTop: "5px",
+              backgroundColor: "#2A2A2A",
+              color: "white",
+              border: "1px solid #444",
+              borderRadius: "4px",
+              boxSizing: "border-box",
+            }}
+          >
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+          </select>
+        </label>
+
+        <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: "8px 16px",
+              backgroundColor: "#444",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            style={{
+              padding: "8px 16px",
+              backgroundColor: "#007bff",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// EDGE EDIT MODAL COMPONENT
+interface EdgeModalProps {
+  isOpen: boolean;
+  currentLabel: string;
+  onClose: () => void;
+  onSave: (label: string) => void;
+}
+
+function EdgeEditModal({ isOpen, currentLabel, onClose, onSave }: EdgeModalProps) {
+  const [label, setLabel] = useState(currentLabel);
+
+  // Update state when modal opens with new edge data
+  React.useEffect(() => {
+    if (isOpen) {
+      setLabel(currentLabel);
+    }
+  }, [isOpen, currentLabel]);
+
+  const handleSave = () => {
+    onSave(label);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 1000,
+    }}>
+      <div style={{
+        backgroundColor: "#1A1A1A",
+        padding: "20px",
+        borderRadius: "8px",
+        color: "white",
+        minWidth: "300px",
+      }}>
+        <h3 style={{ marginTop: 0 }}>Edge Properties</h3>
+        <br></br>
+        <label style={{ display: "block", marginBottom: "15px" }}>
+          <span>Label:</span>
+          <input
+            type="text"
+            value={label ?? ""}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder="Enter edge label"
+            style={{
+              width: "100%",
+              padding: "8px",
+              marginTop: "5px",
+              backgroundColor: "#2A2A2A",
+              color: "white",
+              border: "1px solid #444",
+              borderRadius: "4px",
+              boxSizing: "border-box",
+            }}
+          />
+        </label>
+
+        <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: "8px 16px",
+              backgroundColor: "#444",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            style={{
+              padding: "8px 16px",
+              backgroundColor: "#007bff",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [nodes, setNodes] = useState<Node<{ label: string }>[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
+  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
+  const [isEdgeModalOpen, setIsEdgeModalOpen] = useState(false);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] =
     useState<ReactFlowInstance | null>(null);
@@ -177,16 +433,44 @@ export default function Home() {
     [nodes]
   );
 
+  // ON DOUBLE CLICK EDGE - OPEN MODAL
   const onEdgeDoubleClick = useCallback((_: React.MouseEvent, edge: Edge) => {
-  const newLabel = window.prompt("Enter edge label:", String(edge.label ?? ""));
-  if (newLabel !== null) {
+    setSelectedEdge(edge);
+    setIsEdgeModalOpen(true);
+  }, []);
+
+  // HANDLE EDGE SAVE FROM MODAL
+  const handleEdgeSave = useCallback((label: string) => {
     setEdges((eds) =>
       eds.map((e) =>
-        e.id === edge.id ? { ...e, label: newLabel } : e
-        )
-      );
-    }
+        e.id === selectedEdge?.id ? { ...e, label } : e
+      )
+    );
+    setIsEdgeModalOpen(false);
+    setSelectedEdge(null);
+  }, [selectedEdge]);
+
+  // ON DOUBLE CLICK NODE - OPEN MODAL
+  const onNodeDoubleClick = useCallback((_: React.MouseEvent, node: Node) => {
+    setSelectedNode(node);
+    setIsModalOpen(true);
   }, []);
+
+  // HANDLE NODE SAVE FROM MODAL
+  const handleNodeSave = useCallback((name: string, criticality: number) => {
+    setNodes((nds) =>
+      nds.map((n) =>
+        n.id === selectedNode?.id
+          ? {
+              ...n,
+              data: { ...n.data, label: name, criticality },
+            }
+          : n
+      )
+    );
+    setIsModalOpen(false);
+    setSelectedNode(null);
+  }, [selectedNode]);
 
   const onDragStart = useCallback((event: React.DragEvent, type: string) => {
     event.dataTransfer.setData("application/reactflow", type);
@@ -219,7 +503,7 @@ export default function Home() {
           {
             id,
             position,
-            data: { label: type },
+            data: { label: type, criticality: 1 },
             type,
           },
         ];
@@ -328,6 +612,7 @@ export default function Home() {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onEdgeDoubleClick={onEdgeDoubleClick}
+            onNodeDoubleClick={onNodeDoubleClick}
             onConnect={onConnect}
             onInit={setReactFlowInstance}
             onDrop={onDrop}
@@ -340,6 +625,24 @@ export default function Home() {
           </ReactFlow>
         </div>
       </div>
+
+      {/* NODE EDIT MODAL */}
+      <NodeEditModal
+        isOpen={isModalOpen}
+        nodeType={selectedNode?.type || ""}
+        currentName={selectedNode?.data?.label || ""}
+        currentCriticality={selectedNode?.data?.criticality || 1}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleNodeSave}
+      />
+
+      {/* EDGE EDIT MODAL */}
+      <EdgeEditModal
+        isOpen={isEdgeModalOpen}
+        currentLabel={selectedEdge?.label?.toString() || ""}
+        onClose={() => setIsEdgeModalOpen(false)}
+        onSave={handleEdgeSave}
+      />
     </div>
   );
 }
