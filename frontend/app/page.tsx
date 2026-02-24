@@ -43,7 +43,7 @@ function ProcessNode({ data }: { data: { label: string } }) {
       {/* Left Handle */}
       <Handle type="target" position={Position.Left} id="left" />
       
-      <div>{data.label}</div>
+      <div style={{ color: "white" }}>{data.label}</div>
     </div>
   );
 }
@@ -70,7 +70,7 @@ function StoreNode({ data }: { data: { label: string } }) {
       {/* Left Handle */}
       <Handle type="target" position={Position.Left} id="left" />
       
-      <div>{data.label}</div>
+      <div style={{ color: "white" }}>{data.label}</div>
     </div>
   );
 }
@@ -97,7 +97,7 @@ function ActorNode({ data }: { data: { label: string } }) {
       {/* Left Handle */}
       <Handle type="target" position={Position.Left} id="left" />
       
-      <div>{data.label}</div>
+      <div style={{ color: "white" }}>{data.label}</div>
     </div>
   );
 }
@@ -125,7 +125,7 @@ function FlowNode({ data }: { data: { label: string } }) {
       {/* Left Handle */}
       <Handle type="target" position={Position.Left} id="left" />
       
-      <div>{data.label}</div>
+      <div style={{ color: "white" }}>{data.label}</div>
     </div>
   );
 }
@@ -157,6 +157,9 @@ export default function Home() {
   // NOTE: ON LABEL SOURCE IS LEFT NODE TARGET IS RIGHT NODE ALWAYS, REGARDLESS OF WHERE YOU CONNECT TO THE NODE
   const onConnect = useCallback(
     (connection: Connection) => {
+      const sourceNode = nodes.find((n) => n.id === connection.source);
+      const targetNode = nodes.find((n) => n.id === connection.target);
+
       setEdges((eds) => addEdge({
         ...connection,
         markerEnd: {
@@ -165,9 +168,13 @@ export default function Home() {
         label: "",
         labelStyle: { fill: "#fff", fontWeight: 500 },
         labelBgStyle: { fill: "#141414"},
+        data: {
+          sourceNodeType: sourceNode?.type,
+          targetNodeType: targetNode?.type,
+        }
       }, eds));
     },
-    []
+    [nodes]
   );
 
   const onEdgeDoubleClick = useCallback((_: React.MouseEvent, edge: Edge) => {
