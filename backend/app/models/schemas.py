@@ -171,3 +171,39 @@ class ArchitectureSummaryResponse(BaseModel):
     description: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+
+
+# Re-export simulation schemas from app.core.schemas for backwards compatibility
+# Tests and routers may import these from app.models.schemas
+from app.core.schemas import (
+    ArchitectureSchema,
+    ComponentSchema,
+    DataFlowSchema,
+    CriticalityRankEntry,
+    SimulationResultSchema,
+    HealthResponse,
+    ErrorResponse,
+)
+
+__all__ = [
+    # Database CRUD schemas
+    "ComponentCreate",
+    "ComponentUpdate", 
+    "ComponentResponse",
+    "FlowCreate",
+    "FlowUpdate",
+    "FlowResponse",
+    "FlowInlineCreate",
+    "ArchitectureCreate",
+    "ArchitectureUpdate",
+    "ArchitectureResponse",
+    "ArchitectureSummaryResponse",
+    # Simulation schemas (re-exported from app.core.schemas)
+    "ArchitectureSchema",
+    "ComponentSchema",
+    "DataFlowSchema",
+    "CriticalityRankEntry",
+    "SimulationResultSchema",
+    "HealthResponse",
+    "ErrorResponse",
+]
