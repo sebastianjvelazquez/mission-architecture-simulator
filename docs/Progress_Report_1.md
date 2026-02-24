@@ -301,9 +301,9 @@ Florida State University - CEN 4090L
 
 ## 7. Link to Video
 
-**Demo Video:** [To be added before submission deadline]
+**Demo Video:** [Increment 1 Demo - Mission Architecture Simulator](https://youtu.be/K8RDprVI4_4)
 
-*The video will demonstrate:*
+*The video demonstrates:*
 1. Backend API functionality via Swagger UI
 2. Simulation execution with node compromise scenario
 3. Results showing baseline score, compromised score, and affected components
