@@ -91,7 +91,7 @@ def _get_architecture_stub(architecture_id: int) -> ArchitectureSchema:
                 "id": "control-1",
                 "name": "Control-1",
                 "type": "Control",
-                "criticality": 9,   # Highest criticality - losing Control is worst
+                "criticality": 9,  # Highest criticality - losing Control is worst
                 "position": {"x": 500, "y": 100},
             },
         ],
@@ -119,15 +119,12 @@ def _get_architecture_stub(architecture_id: int) -> ArchitectureSchema:
 # by FastAPI and passed as the first argument to simulate_architecture().
 @router.post(
     "/{architecture_id}/simulate",
-
     # FastAPI will validate and serialize the return value against this schema.
     # If the returned object is missing fields or has wrong types, FastAPI raises
     # a 500 before the response is sent.
     response_model=SimulationResultSchema,
-
     # 200 OK is the default for POST but we set it explicitly for clarity.
     status_code=status.HTTP_200_OK,
-
     # summary and responses appear in the Swagger /docs UI.
     summary="Run an attack scenario against a saved architecture",
     responses={
@@ -139,7 +136,6 @@ def _get_architecture_stub(architecture_id: int) -> ArchitectureSchema:
 async def simulate_architecture(
     # Path parameter – the integer ID of the architecture to simulate against.
     architecture_id: int,
-
     # Query parameter: which scenario to run.
     # Default is node_compromise so callers don't have to specify it every time.
     # Appears in the URL like: ?scenario_type=node_compromise
@@ -148,15 +144,13 @@ async def simulate_architecture(
         description="Attack scenario to simulate",
         examples=["node_compromise"],
     ),
-
     # Query parameter: which component to attack.
     # Required (no default) – the caller must always specify a target.
     # Appears in the URL like: ?target_component_id=sensor-1
     target_component_id: str = Query(
-        ...,    # ... means required in Pydantic/FastAPI
+        ...,  # ... means required in Pydantic/FastAPI
         description="ID of the component to attack",
     ),
-
     # Dependency injection: FastAPI calls get_settings() and passes the result here.
     # In tests we override get_settings() to inject a test Settings object,
     # which means tests don't read from the real .env file.
@@ -192,7 +186,9 @@ async def simulate_architecture(
     # TODO (Person 3): swap this stub for a real database query, e.g.:
     #     architecture = db.query(ArchitectureORM).filter_by(id=architecture_id).first()
     #     if not architecture:
-    #         raise HTTPException(status_code=404, detail=f"Architecture {architecture_id} not found")
+    #         raise HTTPException(
+    #             status_code=404, detail=f"Architecture {architecture_id} not found"
+    #         )
     #     architecture = architecture.to_schema()
     architecture = _get_architecture_stub(architecture_id)
 

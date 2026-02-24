@@ -183,8 +183,7 @@ class MissionArchitectureSimulator:
 
         if scenario_type not in SUPPORTED_SCENARIOS:
             raise SimulatorError(
-                f"Unknown scenario '{scenario_type}'. "
-                f"Supported: {sorted(SUPPORTED_SCENARIOS)}"
+                f"Unknown scenario '{scenario_type}'. " f"Supported: {sorted(SUPPORTED_SCENARIOS)}"
             )
 
         # Check the target exists in the graph before dispatching to any
@@ -246,9 +245,7 @@ class MissionArchitectureSimulator:
         # Build human-readable names parallel to the affected_ids list so the
         # frontend doesn't have to do its own ID-to-name resolution.
         affected_names = [
-            self.graph.nodes[nid].get("name", nid)
-            for nid in affected_ids
-            if nid in self.graph
+            self.graph.nodes[nid].get("name", nid) for nid in affected_ids if nid in self.graph
         ]
 
         criticality_ranking = self.rank_criticality(affected_ids)

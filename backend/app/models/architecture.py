@@ -16,7 +16,6 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, relationship
 
 
-
 class Base(DeclarativeBase):
     pass
 
@@ -33,9 +32,7 @@ class Architecture(Base):
     name: str = Column(String(255), nullable=False)
     description: str | None = Column(Text, nullable=True)
     properties: dict | None = Column(JSONB, nullable=True, default=dict)
-    created_at: datetime = Column(
-        DateTime(timezone=True), nullable=False, default=_utcnow
-    )
+    created_at: datetime = Column(DateTime(timezone=True), nullable=False, default=_utcnow)
     updated_at: datetime = Column(
         DateTime(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow
     )
@@ -81,9 +78,7 @@ class Component(Base):
     position_x: float = Column(Float, nullable=True)
     position_y: float = Column(Float, nullable=True)
     properties: dict | None = Column(JSONB, nullable=True, default=dict)
-    created_at: datetime = Column(
-        DateTime(timezone=True), nullable=False, default=_utcnow
-    )
+    created_at: datetime = Column(DateTime(timezone=True), nullable=False, default=_utcnow)
     updated_at: datetime = Column(
         DateTime(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow
     )
@@ -144,9 +139,7 @@ class Flow(Base):
     cia_requirement: str | None = Column(String(50), nullable=True)
     latency_sensitivity: str | None = Column(String(20), nullable=True)
     properties: dict | None = Column(JSONB, nullable=True, default=dict)
-    created_at: datetime = Column(
-        DateTime(timezone=True), nullable=False, default=_utcnow
-    )
+    created_at: datetime = Column(DateTime(timezone=True), nullable=False, default=_utcnow)
     updated_at: datetime = Column(
         DateTime(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow
     )

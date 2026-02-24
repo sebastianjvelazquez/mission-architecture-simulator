@@ -6,12 +6,9 @@ from typing import Any, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 
-
 class ComponentCreate(BaseModel):
 
-    component_id: str = Field(
-        ..., description="Frontend-generated unique ID (UUID or slug)"
-    )
+    component_id: str = Field(..., description="Frontend-generated unique ID (UUID or slug)")
     name: str = Field(..., description="Human-readable component name")
     component_type: str = Field(
         ...,
@@ -58,15 +55,10 @@ class ComponentResponse(BaseModel):
     updated_at: datetime
 
 
-
 class FlowCreate(BaseModel):
 
-    source_component_id: int = Field(
-        ..., description="DB id of the source component"
-    )
-    target_component_id: int = Field(
-        ..., description="DB id of the target component"
-    )
+    source_component_id: int = Field(..., description="DB id of the source component")
+    target_component_id: int = Field(..., description="DB id of the target component")
     data_type: Optional[str] = Field(
         None, description="Type of data transmitted (e.g. telemetry, commands)"
     )
@@ -108,9 +100,11 @@ class FlowResponse(BaseModel):
     updated_at: datetime
 
 
-
 class FlowInlineCreate(BaseModel):
-    """Flow create schema for inline architecture POST. References components by string component_id."""
+    """Flow create schema for inline architecture POST.
+
+    References components by string component_id.
+    """
 
     source_component_id: str = Field(..., description="component_id of the source component")
     target_component_id: str = Field(..., description="component_id of the target component")
@@ -175,20 +169,20 @@ class ArchitectureSummaryResponse(BaseModel):
 
 # Re-export simulation schemas from app.core.schemas for backwards compatibility
 # Tests and routers may import these from app.models.schemas
-from app.core.schemas import (
+from app.core.schemas import (  # noqa: E402
     ArchitectureSchema,
     ComponentSchema,
-    DataFlowSchema,
     CriticalityRankEntry,
-    SimulationResultSchema,
-    HealthResponse,
+    DataFlowSchema,
     ErrorResponse,
+    HealthResponse,
+    SimulationResultSchema,
 )
 
 __all__ = [
     # Database CRUD schemas
     "ComponentCreate",
-    "ComponentUpdate", 
+    "ComponentUpdate",
     "ComponentResponse",
     "FlowCreate",
     "FlowUpdate",

@@ -1,1 +1,1 @@
-from app.models.architecture import Base, Architecture, Component, Flow  # noqa: F401
+from app.models.architecture import Architecture, Base, Component, Flow  # noqa: F401

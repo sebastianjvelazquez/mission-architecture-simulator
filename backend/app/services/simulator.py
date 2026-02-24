@@ -7,13 +7,13 @@ which matches the expected import path in tests and documentation.
 """
 
 from app.core.simulator import (
+    SUPPORTED_SCENARIOS,
     MissionArchitectureSimulator,
     SimulatorError,
-    SUPPORTED_SCENARIOS,
 )
 
 __all__ = [
     "MissionArchitectureSimulator",
-    "SimulatorError", 
+    "SimulatorError",
     "SUPPORTED_SCENARIOS",
 ]

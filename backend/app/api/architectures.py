@@ -68,12 +68,18 @@ def create_architecture(
         if flow.source_component_id not in component_id_set:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=f"Flow source_component_id '{flow.source_component_id}' not found in components.",
+                detail=(
+                    f"Flow source_component_id '{flow.source_component_id}'"
+                    " not found in components."
+                ),
             )
         if flow.target_component_id not in component_id_set:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=f"Flow target_component_id '{flow.target_component_id}' not found in components.",
+                detail=(
+                    f"Flow target_component_id '{flow.target_component_id}'"
+                    " not found in components."
+                ),
             )
 
     try:

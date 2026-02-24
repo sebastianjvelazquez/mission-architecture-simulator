@@ -34,7 +34,9 @@ def _before_cursor_execute(conn, cursor, statement, parameters, context, execute
 
 @event.listens_for(engine, "after_cursor_execute")
 def _after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
-    elapsed_ms = (time.perf_counter() - conn.info.pop("query_start_time", time.perf_counter())) * 1000
+    elapsed_ms = (
+        time.perf_counter() - conn.info.pop("query_start_time", time.perf_counter())
+    ) * 1000
     if elapsed_ms >= _SLOW_QUERY_THRESHOLD_MS:
         logger.warning(
             "Slow query (%.1f ms): %.200s",

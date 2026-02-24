@@ -26,8 +26,8 @@ from fastapi import FastAPI
 # blocked by the browser when trying to call the API (running on localhost:8000).
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.core.config import get_settings
 from app.api.architectures import router as architectures_router
+from app.core.config import get_settings
 from app.core.simulate import router as simulate_router
 
 # Load settings once at module level. get_settings() is cached with @lru_cache,
@@ -75,19 +75,15 @@ allowed_origins = _parse_allowed_origins(settings.ALLOWED_ORIGINS)
 # incoming requests.
 app.add_middleware(
     CORSMiddleware,
-
     # If ALLOWED_ORIGINS was empty or blank in .env, fall back to localhost:3000
     # so local development always works even with a misconfigured .env file.
     allow_origins=allowed_origins or ["http://localhost:3000"],
-
     # Allow the browser to send cookies and Authorization headers cross-origin.
     # Required if we add session-based auth or JWT headers in a later increment.
     allow_credentials=True,
-
     # Allow all HTTP methods (GET, POST, PUT, DELETE, OPTIONS, etc.).
     # The OPTIONS method is used by the browser's CORS preflight check.
     allow_methods=["*"],
-
     # Allow all headers so the frontend can send Content-Type, Authorization,
     # and any custom headers without being blocked.
     allow_headers=["*"],
