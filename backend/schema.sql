@@ -29,7 +29,10 @@ CREATE TABLE architectures (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
-    
+
+    -- Flexible properties (JSONB for future extensibility)
+    properties JSONB DEFAULT '{}'::jsonb,
+
     -- Future: Add user_id when authentication is implemented
     -- user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     
@@ -56,13 +59,17 @@ CREATE INDEX idx_architectures_created_at ON architectures(created_at DESC);
 CREATE TABLE components (
     id SERIAL PRIMARY KEY,
     architecture_id INTEGER NOT NULL REFERENCES architectures(id) ON DELETE CASCADE,
-    
+
+    -- User-defined string identifier (e.g. "s1", "ctrl1")
+    component_id VARCHAR(255),
+
     -- Core attributes
     name VARCHAR(255) NOT NULL,
     component_type VARCHAR(50) NOT NULL, -- sensor, compute, communication, control, etc.
-    
+    criticality INTEGER NOT NULL DEFAULT 5,
+
     -- Flexible properties (JSONB for schema-less attributes)
-    -- Example: {"confidentiality": 5, "integrity": 4, "availability": 5, "criticality": "HIGH"}
+    -- Example: {"confidentiality": 5, "integrity": 4, "availability": 5}
     properties JSONB DEFAULT '{}'::jsonb,
     
     -- UI/Diagram editor position
@@ -104,6 +111,9 @@ CREATE TABLE flows (
     
     -- Flow attributes
     flow_type VARCHAR(50) DEFAULT 'data', -- data, control, power, etc.
+    data_type VARCHAR(100),
+    cia_requirement VARCHAR(50),
+    latency_sensitivity VARCHAR(20),
     
     -- Flexible properties (JSONB for bandwidth, latency, protocol, etc.)
     -- Example: {"bandwidth_mbps": 100, "latency_ms": 5, "protocol": "TCP"}
