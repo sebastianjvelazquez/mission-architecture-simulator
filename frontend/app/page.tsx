@@ -16,6 +16,7 @@ import ReactFlow, {
   addEdge,
   Connection,
   MarkerType,
+  ConnectionMode,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import Navbar from "@/components/Navbar";
@@ -620,6 +621,7 @@ export default function Home() {
             onDragOver={onDragOver}
             nodeTypes={nodeTypes}
             fitView
+            connectionMode={ConnectionMode.Loose}
           >
             <Background />
             <Controls />
@@ -648,9 +650,8 @@ export default function Home() {
   );
 }
 
-
-// HANDLE SAVE ARCHITECTURE - SEND POST REQUEST TO BACKEND WITH NODES AND EDGES - WIP
-const handleSaveArchitecture = useCallback(event {
+/*
+const handleSaveArchitecture = useCallback(async () => {
   try {
     const response = await fetch("/backend/api/architectures", {
       method: "POST",
@@ -680,3 +681,17 @@ const handleSaveArchitecture = useCallback(event {
 }, [nodes, edges]);
 
 <Navbar onSave={handleSaveArchitecture} />
+
+const handleLoadArchitecture = useCallback(async () => {
+  try {
+    const response = await fetch("/backend/api/architectures/1"); // Need to prompt user for which architecture to load
+    const data = await response.json();
+    setNodes(data.nodes);
+    setEdges(data.edges);
+    alert("Architecture loaded successfully!");
+  } catch (error) {
+    alert("Error loading architecture");
+  }
+}, []);
+
+*/
