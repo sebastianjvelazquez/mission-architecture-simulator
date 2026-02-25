@@ -19,6 +19,8 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import Navbar from "@/components/Navbar";
+import { nodeServerAppPaths } from "next/dist/build/webpack/plugins/pages-manifest-plugin";
+import { on } from "events";
 
 // ALL CUSTOM NODES
 function ProcessNode({ data }: { data: { label: string } }) {
@@ -410,7 +412,6 @@ export default function Home() {
   };
 
   // CONNECTIONS BETWEEN NODES (ARROWS)
-  // NOTE: ON LABEL SOURCE IS LEFT NODE TARGET IS RIGHT NODE ALWAYS, REGARDLESS OF WHERE YOU CONNECT TO THE NODE
   const onConnect = useCallback(
     (connection: Connection) => {
       const sourceNode = nodes.find((n) => n.id === connection.source);
@@ -585,7 +586,7 @@ export default function Home() {
                   onDragStart={(event) => onDragStart(event, type)}
                   style={{
                     width: "100%",
-                    height: "100px",
+                    height: "80px",
                     padding: "10px",
                     backgroundColor: "#1A1A1A",
                     color: "#FFFFFF",
@@ -646,3 +647,36 @@ export default function Home() {
     </div>
   );
 }
+
+
+// HANDLE SAVE ARCHITECTURE - SEND POST REQUEST TO BACKEND WITH NODES AND EDGES - WIP
+const handleSaveArchitecture = useCallback(event {
+  try {
+    const response = await fetch("/backend/api/architectures", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify ({
+        name: "My Architecture", // Need to prompt user for this
+        nodes: nodes.map((n) => ({
+          id: n.id,
+          type: n.type,
+          data: n.data,
+          position: n.position,
+        })),
+        edges: edges.map((e) => ({
+          id: e.id,
+          source: e.source,
+          target: e.target,
+          label: e.label,
+          data: e.data,
+        })),
+        }),
+    });
+    const data = await response.json();
+    alert("Architecture saved successfully!");
+  } catch (error) { 
+    alert("Error saving architecture");
+  }
+}, [nodes, edges]);
+
+<Navbar onSave={handleSaveArchitecture} />

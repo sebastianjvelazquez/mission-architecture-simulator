@@ -13,22 +13,35 @@ export default function Navbar() {
     className={inter.className}
     style={{
       width: "100%",
-      height: "80px",
+      height: "50px",
       backgroundColor: "#080808",
       color: "white",
       display: "flex",
       alignItems: "center",
-      padding: "0 20px",
+      padding: "0px",
       boxSizing: "border-box",
-      justifyContent: "center",
+      justifyContent: "left",
     }}>
       <Image 
-        src="/MissionSystemsArchitecture.png" 
+        src="/LogoMASBlue.png" 
         alt="Logo" 
-        width={500}
-        height={500}
-        style={{ marginRight: "10px"}}
+        width={150}
+        height={150}
+        style={{marginTop : "10px" }}
       />
+      <button 
+        onClick={onSave}
+        style={{
+          padding: "8px 16px",
+          backgroundColor: "#1A1A1A",
+          color: "white",
+          border: "none",
+          borderRadius: "4px",
+          cursor: "pointer",
+        }}
+      >
+        Save Architecture
+      </button>
     </nav>
   );
 }
