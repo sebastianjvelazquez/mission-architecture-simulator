@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import {Inter } from 'next/font/google';
+import Link from "next/dist/client/link";
 
 const inter = Inter({ weight: "500", subsets: ['latin'] });
 
@@ -21,6 +22,7 @@ export default function Navbar() {
 
   const handleLoad = () => {
     // TODO: ADD LOGIC FOR LOADING THE MODEL FROM DB
+    // LOAD MODEL FROM DB BASED ON ID IN DATABASE
     console.log("Loading model:", modelName);
     setShowLoadModal(false);
     setModelName("");
@@ -57,7 +59,7 @@ export default function Navbar() {
           gap: "10px",
         }}>
           <li>
-            <button 
+            <button
               id="dashboard-button"
               style={{
                 padding: "10px 16px",
@@ -77,7 +79,7 @@ export default function Navbar() {
                 width={24} 
                 height={16}
               />
-              <h3 style={{margin: "0", fontSize: "14px"}}>Dashboard</h3>
+              <Link href="/dashboard" style={{margin: "0", fontSize: "14px"}}>Dashboard</Link>
             </button>
           </li>
           <li>
@@ -233,7 +235,7 @@ export default function Navbar() {
             <h2 style={{ marginTop: 0, marginBottom: "20px" }}>Load Model</h2>
             <input
               type="text"
-              placeholder="Enter model name"
+              placeholder="Enter model ID:"
               value={modelName}
               onChange={(e) => setModelName(e.target.value)}
               style={{

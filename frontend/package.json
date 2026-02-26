@@ -13,6 +13,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "reactflow": "^11.11.4",
+    "recharts": "^3.7.0",
     "workflow": "^4.1.0-beta.60"
   },
   "devDependencies": {

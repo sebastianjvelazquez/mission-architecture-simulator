@@ -19,7 +19,7 @@ import ReactFlow, {
   ConnectionMode,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import Navbar from "@/components/Navbar";
+import Navbar from "@/components/NavbarEditor";
 import { nodeServerAppPaths } from "next/dist/build/webpack/plugins/pages-manifest-plugin";
 import { on } from "events";
 
