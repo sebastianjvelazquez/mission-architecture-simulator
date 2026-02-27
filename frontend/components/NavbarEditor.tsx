@@ -30,110 +30,120 @@ export default function Navbar() {
 
   return (
     <>
+    <div className="container mx-auto px-6 py-6 space-y-6 max-w-7x5">
       <nav 
       className={inter.className}
       style={{
         width: "100%",
-        height: "60px",
-        backgroundColor: "#0A0A0A",
+        height: "0px",
+        backgroundColor: "transparent",
         color: "white",
         display: "flex",
         alignItems: "center",
         padding: "10px 10px",
         boxSizing: "border-box",
-        justifyContent: "space-between",
+        position: "relative",
+        justifyContent: "center",
       }}>
         <Image 
-          src="/masSmall.png" 
+        // MAKE LOGO GRADIENT BLUE AND WHITE
+          src="/masPNG.png" 
           alt="Logo" 
-          width={200}
+          width={65}
           height={50}
-          style={{marginTop: "0px", objectFit: "contain" }}
+          style={{position: "absolute", left: "4px", marginTop: "14px", objectFit: "contain" }}
         />
         
-        <ul style={{
-          display: "flex",
-          listStyle: "none",
-          margin: 0,
-          padding: 0,
-          gap: "10px",
+        <div style={{
+          backgroundColor: "#1A1A1A",
+          borderRadius: "25px",
+          padding: "5px 15px",
+          border: "1px solid #333",
+          marginTop: "20px",
         }}>
-          <li>
-            <button
-              id="dashboard-button"
-              style={{
-                padding: "10px 16px",
-                backgroundColor: "transparent",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-              }}
-            >
-              <Image 
-                src="/dashboardIcon.png" 
-                alt="Dashboard Icon" 
-                width={24} 
-                height={16}
-              />
-              <Link href="/dashboard" style={{margin: "0", fontSize: "14px"}}>Dashboard</Link>
-            </button>
-          </li>
-          <li>
-            <button 
-              id="load-button"
-              onClick={() => setShowLoadModal(true)}
-              style={{
-                padding: "10px 16px",
-                backgroundColor: "transparent",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px", 
-              }}
-            >
-              <Image 
-                src="/loadIcon.png" 
-                alt="Load Icon" 
-                width={19} 
-                height={16}
-              />
-              <h3 style={{margin: "0", fontSize: "14px"}}>Load</h3>
-            </button>
-          </li>
-
-          <li>
-            <button 
-              id="save-button"
-              onClick={() => setShowSaveModal(true)}
-              style={{
-                padding: "10px 16px",
-                backgroundColor: "transparent",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-              }}
-            >
-              <Image 
-                src="/SaveIcon.png" 
-                alt="Save Icon" 
-                width={16} 
-                height={16}
-              />
-              <h3 style={{margin: "0", fontSize: "14px"}}>Save</h3>
-            </button>
-          </li>
-        </ul>
+          <ul style={{
+            display: "flex",
+            listStyle: "none",
+            margin: 0,
+            padding: 0,
+            gap: "10px",
+          }}>
+            <li>
+              <button 
+                id="load-button"
+                onClick={() => setShowLoadModal(true)}
+                style={{
+                  padding: "10px 16px",
+                  backgroundColor: "transparent",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px", 
+                }}
+              >
+                <Image 
+                  src="/loadIcon.png" 
+                  alt="Load Icon" 
+                  width={19} 
+                  height={16}
+                />
+                <h3 style={{margin: "0", fontSize: "14px"}}>Load</h3>
+              </button>
+            </li>
+            <li>
+              <button 
+                id="save-button"
+                onClick={() => setShowSaveModal(true)}
+                style={{
+                  padding: "10px 16px",
+                  backgroundColor: "transparent",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                <Image 
+                  src="/SaveIcon.png" 
+                  alt="Save Icon" 
+                  width={16} 
+                  height={16}
+                />
+                <h3 style={{margin: "0", fontSize: "14px"}}>Save</h3>
+              </button>
+            </li>
+            <li>
+              <button
+                id="dashboard-button"
+                style={{
+                  padding: "10px 16px",
+                  backgroundColor: "transparent",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                <Image 
+                  src="/dashboardIcon.png" 
+                  alt="Dashboard Icon" 
+                  width={24} 
+                  height={16}
+                />
+                <Link href="/dashboard" style={{margin: "0", fontSize: "14px"}}>Dashboard</Link>
+              </button>
+            </li>
+          </ul>
+        </div>
       </nav>
 
       {/* Save Modal */}
@@ -285,6 +295,7 @@ export default function Navbar() {
           </div>
         </div>
       )}
+    </div>
     </>
   );
 }

@@ -19,6 +19,13 @@
   }
 }
 
+@theme {
+  --color-primary: #1A1A1A;
+  --color-secondary: #080808;
+  --color-custom-block: #0F0F0F;
+  --color-baseline-block: #B0F078;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

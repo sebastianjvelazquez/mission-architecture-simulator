@@ -29,9 +29,8 @@ function ProcessNode({ data }: { data: { label: string } }) {
     <div
       style={{
         padding: "10px 20px",
-        border: "1px solid #777",
         borderRadius: "5px",
-        background: "black",
+        background: "rgba(0, 0, 0, 0.5)",
       }}
     >
       {/* Top Handle */}
@@ -56,9 +55,8 @@ function StoreNode({ data }: { data: { label: string } }) {
     <div
       style={{
         padding: "10px 20px",
-        border: "1px solid #777",
         borderRadius: "5px",
-        background: "black",
+        background: "rgba(0, 0, 0, 0.5)",
       }}
     >
       {/* Top Handle */}
@@ -83,9 +81,8 @@ function ActorNode({ data }: { data: { label: string } }) {
     <div
       style={{
         padding: "10px 20px",
-        border: "1px solid #777",
         borderRadius: "5px",
-        background: "black",
+        background: "rgba(0, 0, 0, 0.5)",
       }}
     >
       {/* Top Handle */}
@@ -110,9 +107,8 @@ function FlowNode({ data }: { data: { label: string } }) {
     <div
       style={{
         padding: "10px 20px",
-        border: "1px solid #777",
         borderRadius: "5px",
-        background: "black",
+        background: "rgba(0, 0, 0, 0.5)",
         // color: "white",
       }}
     >
@@ -520,19 +516,26 @@ export default function Home() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: 'linear-gradient(45deg, hsla(0, 0%, 10%, 1) 0%, hsla(206, 94%, 2%, 1) 100%)'}}>
       <Navbar />
 
       {/* SIDEBAR */}
-      <div style={{ display: "flex", flex: 1 }}>
+      <div style={{ display: "flex", flex: 1, gap: "14px", padding: "14px"}}>
         <div
           style={{
             width: "220px",
+            height: "95.6%",
             backgroundColor: "#141414",
             padding: "16px",
             boxSizing: "border-box",
             color: "#FFFFFF",
             position: "relative",
+            border: "1px solid #314158",
+            borderRadius: "8px",
+            overflow: "auto",
+            display: "flex",
+            flexDirection: "column",
+            margin: "14px 0",
           }}
         >
           <div>
@@ -568,6 +571,11 @@ export default function Home() {
               <br></br>
               <br></br>
             </p>
+            <p style={{ fontSize: "0.7rem", color: "#B3B3B3" }}>
+              To change component properties, double click to open the properties editor.
+              <br></br>
+              <br></br>
+            </p>
           </div>
           <ul
             style={{
@@ -587,11 +595,11 @@ export default function Home() {
                   onDragStart={(event) => onDragStart(event, type)}
                   style={{
                     width: "100%",
-                    height: "80px",
+                    height: "60px",
                     padding: "10px",
                     backgroundColor: "#1A1A1A",
                     color: "#FFFFFF",
-                    border: "1px solid #3A3A3A",
+                    border: "1px solid #314158",
                     borderRadius: "12px",
                     textAlign: "center",
                     cursor: "grab",
@@ -606,7 +614,7 @@ export default function Home() {
 
         <div
           ref={reactFlowWrapper}
-          style={{ flex: 1, position: "relative", borderLeft: "1px solid #ccc" }}
+          style={{ flex: 1, position: "relative", margin: "14px", borderLeft: "1px solid #ccc", border: "1px solid #314158", borderRadius: "8px", overflow: "hidden" }}
         >
           <ReactFlow
             nodes={nodes}
@@ -623,11 +631,12 @@ export default function Home() {
             fitView
             connectionMode={ConnectionMode.Loose}
           >
-            <Background />
+            <Background gap={24}/>
             <Controls />
           </ReactFlow>
         </div>
       </div>
+      { /* END SIDEBAR */ }
 
       {/* NODE EDIT MODAL */}
       <NodeEditModal
