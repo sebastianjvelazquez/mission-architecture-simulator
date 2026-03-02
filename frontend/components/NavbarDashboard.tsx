@@ -74,12 +74,6 @@ export default function Navbar() {
                   gap: "8px", 
                 }}
               >
-                <Image 
-                  src="/loadIcon.png" 
-                  alt="Load Icon" 
-                  width={19} 
-                  height={16}
-                />
                 <h3 style={{margin: "0", fontSize: "14px"}}>Load</h3>
               </button>
             </li>
@@ -98,12 +92,6 @@ export default function Navbar() {
                   gap: "8px",
                 }}
               >
-                <Image 
-                  src="/homeIcon.png" 
-                  alt="Home Icon" 
-                  width={24} 
-                  height={16}
-                />
                 <Link href="/" style={{margin: "0", fontSize: "14px"}}>Home</Link>
               </button>
             </li>

@@ -15,6 +15,7 @@ export default function Navbar() {
 
   const handleSave = () => {
     // TODO: ADD LOGIC FOR SAVING THE MODEL TO DB
+    // SAVE MODEL WITH NAME, ASSOCIATE NAME WITH ID IN DB
     console.log("Saving model:", modelName);
     setShowSaveModal(false);
     setModelName("");
@@ -32,6 +33,7 @@ export default function Navbar() {
     <>
     <div className="container mx-auto px-6 py-6 space-y-6 max-w-7x5">
       <nav 
+      // CHANGE NAVBAR SO LOAD/SAVE MODALS DON'T SHIFT MAIN CONTENT DOWN WHEN OVERLAYED
       className={inter.className}
       style={{
         width: "100%",
@@ -46,7 +48,8 @@ export default function Navbar() {
         justifyContent: "center",
       }}>
         <Image 
-        // MAKE LOGO GRADIENT BLUE AND WHITE
+        // MAKE LOGO GRADIENT BLUE AND WHITE, OTHER IMAGES ARE HEIGHT 16, LOGO IS 65X50
+        // MAKE LOGO SVG SO IT SCALES AND LOADS BETTER, SAME WITH ALL TYPES OF ICONS
           src="/masPNG.png" 
           alt="Logo" 
           width={65}
@@ -84,12 +87,6 @@ export default function Navbar() {
                   gap: "8px", 
                 }}
               >
-                <Image 
-                  src="/loadIcon.png" 
-                  alt="Load Icon" 
-                  width={19} 
-                  height={16}
-                />
                 <h3 style={{margin: "0", fontSize: "14px"}}>Load</h3>
               </button>
             </li>
@@ -108,13 +105,7 @@ export default function Navbar() {
                   alignItems: "center",
                   gap: "8px",
                 }}
-              >
-                <Image 
-                  src="/SaveIcon.png" 
-                  alt="Save Icon" 
-                  width={16} 
-                  height={16}
-                />
+              > 
                 <h3 style={{margin: "0", fontSize: "14px"}}>Save</h3>
               </button>
             </li>
@@ -133,12 +124,6 @@ export default function Navbar() {
                   gap: "8px",
                 }}
               >
-                <Image 
-                  src="/dashboardIcon.png" 
-                  alt="Dashboard Icon" 
-                  width={24} 
-                  height={16}
-                />
                 <Link href="/dashboard" style={{margin: "0", fontSize: "14px"}}>Dashboard</Link>
               </button>
             </li>
@@ -146,7 +131,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Save Modal */}
+      {/* SAVE MODAL DESIGN CODE */}
       {showSaveModal && (
         <div style={{
           position: "fixed",
@@ -221,7 +206,7 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* Load Modal */}
+      {/* LOAD MODAL DESIGN CODE */}
       {showLoadModal && (
         <div style={{
           position: "fixed",
