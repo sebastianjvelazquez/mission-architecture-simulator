@@ -1,4 +1,6 @@
 # "npm install workflow" in frontend folder for workflow
+# "npm install" in frontend folder for dependencies
+# "npm install recharts" in frontend folder for charts
 # start app with "npm run dev" in frontend folder
 # ES7+ React plugin
 # Prettier plugin

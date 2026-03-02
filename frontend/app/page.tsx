@@ -24,13 +24,14 @@ import { nodeServerAppPaths } from "next/dist/build/webpack/plugins/pages-manife
 import { on } from "events";
 
 // ALL CUSTOM NODES
-function ProcessNode({ data }: { data: { label: string } }) {
+function SensorNode({ data }: { data: { label: string } }) {
   return (
     <div
       style={{
         padding: "10px 20px",
-        borderRadius: "5px",
+        borderRadius: "100px",
         background: "rgba(0, 0, 0, 0.5)",
+        border: "2px solid white",
       }}
     >
       {/* Top Handle */}
@@ -50,13 +51,14 @@ function ProcessNode({ data }: { data: { label: string } }) {
   );
 }
 
-function StoreNode({ data }: { data: { label: string } }) {
+function ComputeNode({ data }: { data: { label: string } }) {
   return (
     <div
       style={{
         padding: "10px 20px",
-        borderRadius: "5px",
+        borderRadius: "100px",
         background: "rgba(0, 0, 0, 0.5)",
+        border: "2px solid white",
       }}
     >
       {/* Top Handle */}
@@ -76,13 +78,14 @@ function StoreNode({ data }: { data: { label: string } }) {
   );
 }
 
-function ActorNode({ data }: { data: { label: string } }) {
+function CommsLinkNode({ data }: { data: { label: string } }) {
   return (
     <div
       style={{
         padding: "10px 20px",
-        borderRadius: "5px",
+        borderRadius: "100px",
         background: "rgba(0, 0, 0, 0.5)",
+        border: "2px solid white",
       }}
     >
       {/* Top Handle */}
@@ -102,14 +105,14 @@ function ActorNode({ data }: { data: { label: string } }) {
   );
 }
 
-function FlowNode({ data }: { data: { label: string } }) {
+function ControlNode({ data }: { data: { label: string } }) {
   return (
     <div
       style={{
         padding: "10px 20px",
-        borderRadius: "5px",
+        borderRadius: "100px",
         background: "rgba(0, 0, 0, 0.5)",
-        // color: "white",
+        border: "2px solid white",
       }}
     >
       {/* Top Handle */}
@@ -128,13 +131,70 @@ function FlowNode({ data }: { data: { label: string } }) {
     </div>
   );
 }
+
+function StorageNode({ data }: { data: { label: string } }) {
+  return (
+    <div
+      style={{
+        padding: "10px 20px",
+        borderRadius: "100px",
+        background: "rgba(0, 0, 0, 0.5)",
+        border: "2px solid white",
+      }}
+    >
+      {/* Top Handle */}
+      <Handle type="target" position={Position.Top} id="top"/>
+      
+      {/* Right Handle */}
+      <Handle type="source" position={Position.Right} id="right" />
+      
+      {/* Bottom Handle */}
+      <Handle type="source" position={Position.Bottom} id="bottom" />
+      
+      {/* Left Handle */}
+      <Handle type="target" position={Position.Left} id="left" />
+      
+      <div style={{ color: "white" }}>{data.label}</div>
+    </div>
+  );
+}
+
+function ExternalNode({ data }: { data: { label: string } }) {
+  return (
+    <div
+      style={{
+        padding: "10px 20px",
+        borderRadius: "100px",
+        background: "rgba(0, 0, 0, 0.5)",
+        border: "2px solid white",
+      }}
+    >
+      {/* Top Handle */}
+      <Handle type="target" position={Position.Top} id="top" />
+      
+      {/* Right Handle */}
+      <Handle type="source" position={Position.Right} id="right" />
+      
+      {/* Bottom Handle */}
+      <Handle type="source" position={Position.Bottom} id="bottom" />
+      
+      {/* Left Handle */}
+      <Handle type="target" position={Position.Left} id="left" />
+      
+      <div style={{ color: "white" }}>{data.label}</div>
+    </div>
+  );
+}
+{/* END OF CUSTOM NODES */}
 
 // DEFINE NODE TYPES
 const nodeTypes = {
-  Process: ProcessNode,
-  Store: StoreNode,
-  Actor: ActorNode,
-  "Data Flow": FlowNode,
+  Sensor: SensorNode,
+  Compute: ComputeNode,
+  CommsLink: CommsLinkNode,
+  Control: ControlNode,
+  Storage: StorageNode,
+  External: ExternalNode,
 };
 
 // NODE EDIT MODAL COMPONENT
@@ -147,11 +207,12 @@ interface NodeModalProps {
   onSave: (name: string, criticality: number) => void;
 }
 
+// NODE EDIT MODAL FUNCTION
 function NodeEditModal({ isOpen, nodeType, currentName, currentCriticality, onClose, onSave }: NodeModalProps) {
   const [name, setName] = useState(currentName);
   const [criticality, setCriticality] = useState(currentCriticality);
 
-  // Update state when modal opens with new node data
+  // UPDATE NAME AND CRITICALITY STATE WHEN MODAL OPENS WITH NEW NODE DATA
   React.useEffect(() => {
     if (isOpen) {
       setName(currentName);
@@ -167,6 +228,7 @@ function NodeEditModal({ isOpen, nodeType, currentName, currentCriticality, onCl
   if (!isOpen) return null;
 
   return (
+    // MODAL STYLING AND POSITIONING
     <div style={{
       position: "fixed",
       top: 0,
@@ -297,10 +359,12 @@ interface EdgeModalProps {
   onSave: (label: string) => void;
 }
 
+
+// CONNECTION/EDGE EDIT MODAL FUNCTION
 function EdgeEditModal({ isOpen, currentLabel, onClose, onSave }: EdgeModalProps) {
   const [label, setLabel] = useState(currentLabel);
 
-  // Update state when modal opens with new edge data
+  // UPDATE LABEL STATE WHEN MODAL OPENS WITH NEW EDGE DATA
   React.useEffect(() => {
     if (isOpen) {
       setLabel(currentLabel);
@@ -418,6 +482,11 @@ export default function Home() {
         ...connection,
         markerEnd: {
           type: MarkerType.ArrowClosed,
+          color: "#fff",
+        },
+        style: {
+          stroke: "#fff",
+          strokeWidth: 3,
         },
         label: "",
         labelStyle: { fill: "#fff", fontWeight: 500 },
@@ -516,21 +585,28 @@ export default function Home() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: 'linear-gradient(45deg, hsla(0, 0%, 10%, 1) 0%, hsla(206, 94%, 2%, 1) 100%)'}}>
+    <div className="min-h-screen" style={{ 
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        backgroundImage: 'url(/IrBG.jpeg)',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundSize: 'cover',
+       }}>
       <Navbar />
 
       {/* SIDEBAR */}
-      <div style={{ display: "flex", flex: 1, gap: "14px", padding: "14px"}}>
+      <div style={{ display: "flex", flex: 1, gap: "14px", padding: "14px", overflow: "hidden"}}>
         <div
           style={{
-            width: "220px",
-            height: "95.6%",
-            backgroundColor: "#141414",
+            flex: "0 0 clamp(180px, 20vw, 280px)",
+            backgroundColor: "transparent",
             padding: "16px",
             boxSizing: "border-box",
             color: "#FFFFFF",
             position: "relative",
-            border: "1px solid #314158",
+            border: "1px solid rgba(255,255,255,1)",
             borderRadius: "8px",
             overflow: "auto",
             display: "flex",
@@ -553,26 +629,17 @@ export default function Home() {
               <img
                 src="/TrashCanPNG.png"
                 alt="Delete all"
-                style={{ width: "22px", height: "22px" }}
+                style={{ width: "32px", height: "32px" }}
               />
             </button>
-            <p style={{ fontSize: "0.7rem", color: "#B3B3B3" }}>
-              To add a component, drag and drop it onto the canvas.
+            <p style={{ fontSize: "0.75rem", color: "#fff" }}>
+              Drag and drop components onto the canvas
               <br></br>
               <br></br>
-            </p>
-            <p style={{ fontSize: "0.7rem", color: "#B3B3B3" }}>
-              To delete a component, select and press delete key, or press the trash can icon to delete all.
+              Double click nodes or edges to edit
               <br></br>
               <br></br>
-            </p>
-            <p style={{ fontSize: "0.7rem", color: "#B3B3B3" }}>
-              To name a connection, double click anywhere on the arrow and enter your label.
-              <br></br>
-              <br></br>
-            </p>
-            <p style={{ fontSize: "0.7rem", color: "#B3B3B3" }}>
-              To change component properties, double click to open the properties editor.
+              Click the trash can icon to clear the canvas
               <br></br>
               <br></br>
             </p>
@@ -587,7 +654,7 @@ export default function Home() {
               gap: "12px",
             }}
           >
-            {["Process", "Store", "Actor", "Data Flow"].map((type) => (
+            {["Sensor", "Compute", "CommsLink", "Control", "Storage", "External"].map((type) => (
               <li key={type}>
                 <button
                   type="button"
@@ -597,10 +664,10 @@ export default function Home() {
                     width: "100%",
                     height: "60px",
                     padding: "10px",
-                    backgroundColor: "#1A1A1A",
+                    backgroundColor: "transparent",
                     color: "#FFFFFF",
-                    border: "1px solid #314158",
-                    borderRadius: "12px",
+                    border: "1px solid rgba(255,255,255,1)",
+                    borderRadius: "25px",
                     textAlign: "center",
                     cursor: "grab",
                   }}
@@ -614,7 +681,7 @@ export default function Home() {
 
         <div
           ref={reactFlowWrapper}
-          style={{ flex: 1, position: "relative", margin: "14px", borderLeft: "1px solid #ccc", border: "1px solid #314158", borderRadius: "8px", overflow: "hidden" }}
+          style={{ flex: 1, position: "relative", margin: "14px", borderLeft: "1px solid #ccc", border: "1px solid rgba(255,255,255,1)", borderRadius: "8px", overflow: "hidden" }}
         >
           <ReactFlow
             nodes={nodes}

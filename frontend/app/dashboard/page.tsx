@@ -30,14 +30,19 @@ const scoreImpactData = [
 
 export default function Dashboard() {
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(45deg, hsla(0, 0%, 10%, 1) 0%, hsla(206, 94%, 2%, 1) 100%)' }}>
+    <div className="min-h-screen" style={{ 
+        backgroundImage: 'url(/IrBG.jpeg)',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundSize: 'cover',
+       }}>
       <Navbar />
       
       <div className="container mx-auto px-6 py-6 space-y-6 max-w-7x5">
         {/* Top Row - Three Charts */}
         <div className="grid grid-cols-3 gap-8">
           {/* Baseline Chart */}
-          <div className="bg-custom-block text-slate-100 border border-slate-700 shadow-xl p-5 rounded-xl">
+          <div className="bg-custom-block text-slate-100 border border-white shadow-xl p-5 rounded-xl">
             <h3 className="text-center text-xs font-semibold tracking-wider uppercase mb-4 text-slate-400 border-b border-slate-700 pb-2">
               BASELINE
             </h3>
@@ -56,7 +61,7 @@ export default function Dashboard() {
           </div>
 
           {/* Compromised Chart */}
-          <div className="bg-custom-block text-slate-100 border border-slate-700 shadow-xl p-5 rounded-xl">
+          <div className="bg-custom-block text-slate-100 border border-white shadow-xl p-5 rounded-xl">
             <h3 className="text-center text-xs font-semibold tracking-wider uppercase mb-4 text-slate-400 border-b border-slate-700 pb-2">
               COMPROMISED
             </h3>
@@ -75,7 +80,7 @@ export default function Dashboard() {
           </div>
 
           {/* Score Impact Chart */}
-          <div className="bg-custom-block text-slate-100 border border-slate-700 shadow-xl p-5 rounded-xl">
+          <div className="bg-custom-block text-slate-100 border border-white shadow-xl p-5 rounded-xl">
             <h3 className="text-center text-xs font-semibold tracking-wider uppercase mb-4 text-slate-400 border-b border-slate-700 pb-2">
               SCORE IMPACT
             </h3>
@@ -95,7 +100,7 @@ export default function Dashboard() {
         </div>
 
         {/* What Happened Section */}
-        <div className="bg-custom-block text-slate-100 border border-slate-700 shadow-xl p-6 rounded-xl">
+        <div className="bg-custom-block text-slate-100 border border-white shadow-xl p-6 rounded-xl">
           <h3 className="text-xs font-semibold tracking-wider uppercase mb-4 text-slate-400 border-b border-slate-700 pb-2">
             INCIDENT SUMMARY
           </h3>
@@ -111,8 +116,8 @@ export default function Dashboard() {
         {/* Bottom Tables */}
         <div className="grid grid-cols-2 gap-6">
           {/* Left Table */}
-          <div className="bg-custom-block border border-slate-700 shadow-xl overflow-hidden rounded-xl">
-            <div className="bg-slate-800 px-4 py-2 border-b border-slate-700">
+          <div className="bg-custom-block border border-white shadow-xl overflow-hidden rounded-xl">
+            <div className="bg-slate-800 px-4 py-2 border-b border-white">
               <h4 className="text-xs font-semibold tracking-wider uppercase text-slate-400">UNAFFECTED COMPONENTS</h4>
             </div>
             <table className="w-full">
@@ -156,9 +161,9 @@ export default function Dashboard() {
           </div>
 
           {/* Right Table */}
-          <div className="bg-custom-block border border-slate-700 shadow-xl overflow-hidden rounded-xl">
-            <div className="bg-slate-800 px-4 py-2 border-b border-slate-700">
-              <h4 className="text-xs font-semibold tracking-wider uppercase text-slate-400">COMPROMISED COMPONENTS</h4>
+          <div className="bg-custom-block border border-white shadow-xl overflow-hidden rounded-xl">
+            <div className="bg-slate-800 px-4 py-2 border-b border-white">
+              <h4 className="text-xs font-semibold tracking-wider uppercase text-white">COMPROMISED COMPONENTS</h4>
             </div>
             <table className="w-full">
               <thead className="bg-custom-block text-slate-300">
