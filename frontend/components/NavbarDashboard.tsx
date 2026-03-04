@@ -51,7 +51,7 @@ export default function Navbar() {
         <Image 
         // MAKE LOGO GRADIENT BLUE AND WHITE, OTHER IMAGES ARE HEIGHT 16, LOGO IS 365X50
         // MAKE LOGO SVG SO IT SCALES AND LOADS BETTER, SAME WITH ALL TYPES OF ICONS
-          src="/MAStext.svg"
+          src="/TextNewLogo.svg"
           alt="Logo" 
           width={365}
           height={50}
@@ -60,10 +60,10 @@ export default function Navbar() {
         
         <div style={{
           // NAVBAR ELIPSE SHAPE
-          //backgroundColor: "#1A1A1A",
-          //borderRadius: "25px",
+          backgroundColor: "rgba(15, 15, 20, 0.85)",
+          borderRadius: "25px",
           padding: "5px 15px",
-          //border: "1px solid #333",
+          border: "1px solid #333",
           marginTop: "20px",
         }}>
           <ul style={{
@@ -71,7 +71,7 @@ export default function Navbar() {
             listStyle: "none",
             margin: 0,
             padding: 0,
-            gap: "10px",
+            gap: "0px",
           }}>
             <li>
               <button 

@@ -31,7 +31,7 @@ function SensorNode({ data }: { data: { label: string } }) {
         padding: "10px 20px",
         borderRadius: "100px",
         background: "rgba(0, 0, 0, 0.5)",
-        border: "2px solid white",
+        border: "1px solid white",
       }}
     >
       {/* Top Handle */}
@@ -58,7 +58,7 @@ function ComputeNode({ data }: { data: { label: string } }) {
         padding: "10px 20px",
         borderRadius: "100px",
         background: "rgba(0, 0, 0, 0.5)",
-        border: "2px solid white",
+        border: "1px solid white",
       }}
     >
       {/* Top Handle */}
@@ -85,7 +85,7 @@ function CommsLinkNode({ data }: { data: { label: string } }) {
         padding: "10px 20px",
         borderRadius: "100px",
         background: "rgba(0, 0, 0, 0.5)",
-        border: "2px solid white",
+        border: "1px solid white",
       }}
     >
       {/* Top Handle */}
@@ -112,7 +112,7 @@ function ControlNode({ data }: { data: { label: string } }) {
         padding: "10px 20px",
         borderRadius: "100px",
         background: "rgba(0, 0, 0, 0.5)",
-        border: "2px solid white",
+        border: "1px solid white",
       }}
     >
       {/* Top Handle */}
@@ -139,7 +139,7 @@ function StorageNode({ data }: { data: { label: string } }) {
         padding: "10px 20px",
         borderRadius: "100px",
         background: "rgba(0, 0, 0, 0.5)",
-        border: "2px solid white",
+        border: "1px solid white",
       }}
     >
       {/* Top Handle */}
@@ -166,7 +166,7 @@ function ExternalNode({ data }: { data: { label: string } }) {
         padding: "10px 20px",
         borderRadius: "100px",
         background: "rgba(0, 0, 0, 0.5)",
-        border: "2px solid white",
+        border: "1px solid white",
       }}
     >
       {/* Top Handle */}
@@ -486,7 +486,7 @@ export default function Home() {
         },
         style: {
           stroke: "#fff",
-          strokeWidth: 3,
+          strokeWidth: 2,
         },
         label: "",
         labelStyle: { fill: "#fff", fontWeight: 500 },
@@ -589,7 +589,7 @@ export default function Home() {
         display: "flex",
         flexDirection: "column",
         height: "100vh",
-        backgroundImage: 'url(/IrBG.jpeg)',
+        backgroundImage: 'url(/BluePurp.jpeg)',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
         backgroundSize: 'cover',
@@ -600,88 +600,153 @@ export default function Home() {
       <div style={{ display: "flex", flex: 1, gap: "14px", padding: "14px", overflow: "hidden"}}>
         <div
           style={{
-            flex: "0 0 clamp(180px, 20vw, 280px)",
-            backgroundColor: "transparent",
-            padding: "16px",
+            flex: "0 0 clamp(200px, 20vw, 280px)",
+            backgroundColor: "rgba(15, 15, 20, 0.85)",
+            padding: "0",
             boxSizing: "border-box",
             color: "#FFFFFF",
             position: "relative",
-            border: "1px solid rgba(255,255,255,1)",
-            borderRadius: "8px",
-            overflow: "auto",
+            border: "1px solid rgba(255, 255, 255, 0.15)",
+            borderRadius: "4px",
+            overflow: "hidden",
             display: "flex",
             flexDirection: "column",
             margin: "14px 0",
+            backdropFilter: "blur(10px)",
           }}
         >
-          <div>
+          {/* HEADER CONTAINER */}
+          <div style={{
+            padding: "20px 20px 16px",
+            borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+          }}>
+            <h3 style={{
+              margin: 0,
+              fontSize: "0.75rem",
+              fontWeight: 500,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: "#A0A0A8",
+            }}>
+              Components
+            </h3>
+          </div>
+
+          {/* INSTRUCTIONS CONTAINER */}
+          <div style={{
+            padding: "16px 20px",
+            borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+          }}>
+            <div style={{
+              fontSize: "0.75rem",
+              color: "#808088",
+              lineHeight: "1.5",
+            }}>
+              <div style={{ marginBottom: "6px" }}>• Drag to canvas</div>
+              <div style={{ marginBottom: "6px" }}>• Double-click to edit</div>
+              <div>• Connect nodes to link</div>
+            </div>
+          </div>
+
+          {/* COMPONENT LIST CONTAINER */}
+          <div style={{
+            flex: 1,
+            padding: "16px 20px",
+            overflowY: "auto",
+          }}>
+            <ul
+              style={{
+                listStyle: "none",
+                padding: 0,
+                margin: 0,
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+              }}
+            >
+              {["Sensor", "Compute", "CommsLink", "Control", "Storage", "External"].map((type) => (
+                <li key={type}>
+                  <button
+                    type="button"
+                    draggable
+                    onDragStart={(event) => onDragStart(event, type)}
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      backgroundColor: "rgba(255, 255, 255, 0.04)",
+                      color: "#FFFFFF",
+                      border: "1px solid rgba(255, 255, 255, 0.1)",
+                      borderRadius: "3px",
+                      textAlign: "left",
+                      cursor: "grab",
+                      fontSize: "0.85rem",
+                      fontWeight: 400,
+                      transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.08)";
+                      e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.2)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.04)";
+                      e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
+                    }}
+                  >
+                    {type}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* FOOTER CONTAINER - DELETE ACTIONS */}
+          <div style={{
+            padding: "16px 20px",
+            borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+          }}>
             <button
               onClick={handleDeleteAll}
               style={{
-                position: "absolute",
-                bottom: "16px",
-                right: "16px",
-                background: "transparent",
-                border: "none",
+                width: "100%",
+                padding: "10px",
+                background: "rgba(255, 255, 255, 0.04)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                borderRadius: "3px",
+                color: "#A0A0A8",
                 cursor: "pointer",
+                fontSize: "0.8rem",
+                fontWeight: 400,
+                transition: "all 0.15s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(220, 50, 50, 0.1)";
+                e.currentTarget.style.borderColor = "rgba(220, 80, 80, 0.3)";
+                e.currentTarget.style.color = "#E08080";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.04)";
+                e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
+                e.currentTarget.style.color = "#A0A0A8";
               }}
             >
-              <img
-                src="/TrashCanPNG.png"
-                alt="Delete all"
-                style={{ width: "32px", height: "32px" }}
-              />
+              Clear Canvas
             </button>
-            <p style={{ fontSize: "0.75rem", color: "#fff" }}>
-              Drag and drop components onto the canvas
-              <br></br>
-              <br></br>
-              Double click nodes or edges to edit
-              <br></br>
-              <br></br>
-              Click the trash can icon to clear the canvas
-              <br></br>
-              <br></br>
-            </p>
           </div>
-          <ul
-            style={{
-              listStyle: "none",
-              padding: 0,
-              margin: 0,
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
-            }}
-          >
-            {["Sensor", "Compute", "CommsLink", "Control", "Storage", "External"].map((type) => (
-              <li key={type}>
-                <button
-                  type="button"
-                  draggable
-                  onDragStart={(event) => onDragStart(event, type)}
-                  style={{
-                    width: "100%",
-                    height: "60px",
-                    padding: "10px",
-                    backgroundColor: "transparent",
-                    color: "#FFFFFF",
-                    border: "1px solid rgba(255,255,255,1)",
-                    borderRadius: "25px",
-                    textAlign: "center",
-                    cursor: "grab",
-                  }}
-                >
-                  {type}
-                </button>
-              </li>
-            ))}
-          </ul>
         </div>
+        { /* END SIDEBAR */ }
 
         <div
           ref={reactFlowWrapper}
-          style={{ flex: 1, position: "relative", margin: "14px", borderLeft: "1px solid #ccc", border: "1px solid rgba(255,255,255,1)", borderRadius: "8px", overflow: "hidden" }}
+          style={{
+            flex: 1,
+            position: "relative",
+            margin: "14px",
+            backgroundColor: "rgba(15, 15, 20, 0.85)",
+            border: "1px solid rgba(255, 255, 255, 0.15)",
+            borderRadius: "4px",
+            overflow: "hidden",
+            backdropFilter: "blur(10px)",
+          }}
         >
           <ReactFlow
             nodes={nodes}
@@ -703,7 +768,6 @@ export default function Home() {
           </ReactFlow>
         </div>
       </div>
-      { /* END SIDEBAR */ }
 
       {/* NODE EDIT MODAL */}
       <NodeEditModal
