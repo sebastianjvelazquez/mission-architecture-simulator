@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint app components"
+    "lint": "eslint app components",
+    "test": "echo \"No frontend tests yet\""
   },
   "dependencies": {
     "next": "16.1.6",
