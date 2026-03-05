@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import {Inter } from 'next/font/google';
 import Link from "next/dist/client/link";
+import handleDeleteAll from "@/app/page";
 
 const inter = Inter({ weight: "500", subsets: ['latin'] });
 
@@ -12,6 +13,7 @@ export default function Navbar() {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showLoadModal, setShowLoadModal] = useState(false);
   const [modelName, setModelName] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSave = () => {
     // TODO: ADD LOGIC FOR SAVING THE MODEL TO DB
@@ -40,21 +42,65 @@ export default function Navbar() {
     // TODO: ADD LOGIC FOR LOADING THE MODEL FROM DB
     // LOAD MODEL FROM DB BASED ON ID IN DATABASE
     /*
-    Load button fetches list of architectures from GET /architectures
-
-    User can select an architecture from the list
-
-    Selected architecture loads components and flows onto canvas
-
-    Canvas cleared before loading new architecture
-
-    Architecture metadata displayed in UI
-
-    Error handling for failed loads or empty list
-
-    Loading spinner during fetch
+    1 [ ] Load button fetches list of architectures from GET /architectures
+    2 [ ] User can select an architecture from the list
+    3 [ ] Selected architecture loads components and flows onto canvas
+    4 [x] Canvas cleared before loading new architecture
+    5 [ ] Architecture metadata displayed in UI
+    6 [ ] Error handling for failed loads or empty list
+    7 [ ] Loading spinner during fetch
     */
-    console.log("Loading model:", modelName);
+    /*
+    STRUCTURE:
+    1. DISPLAY LIST OF ARCHITECTURES IN MODAL (ID + NAME)
+    2. USER SELECTS ARCHITECTURE TO LOAD
+    3. FETCH COMPONENTS AND FLOWS FOR SELECTED ARCHITECTURE
+    4. CLEAR CURRENT CANVAS
+    5. DISPLAY LOADING SPINNER
+    6. RENDER COMPONENTS AND FLOWS ON CANVAS
+    7. DISPLAY SUCCESS OR FAILURE MESSAGE
+    */
+    // TODO: SET LOADING TO TRUE WHEN FETCHING STARTS → setIsLoading(true);
+
+    // Display/Select Start
+    /*
+    for x in db, display name and id in modal as options
+    user clicks on one option → that is the architecture we load (store selected architecture id in state)
+    */
+    // Display/Select End
+
+    // Display Loading Spinner Start
+    setIsLoading(true);
+    // Display Loading Spinner End
+
+    // Fetch Components Start
+    /* 
+    fetch all data from architecture (nodes, edges, id, label, criticality, cia requirements, etc...)
+    store all data in setEdgesNew and setNodesNew as temp array so if other failure the current architecture doesn't delete
+    if works keep going, else display error message
+    */
+    // Fetch Components End
+
+    // Clear Canvas Start
+    /*
+    clear components, start of real loading actions
+    if works keep going, else display error message
+    */
+    handleDeleteAll();
+    // Clear Canvas End
+
+    // Render Components and Flows Start
+    /*
+    assign setEdges and setNodes to the new versions of each, ports all data to current structure
+    if works keep going, else display error message
+    */
+    // Render Components and Flows End
+
+    // Display Success/Failure Message Start
+    setIsLoading(false); // not loading anymore
+    // TODO: DISPLAY SUCCESS MESSAGE IF FETCH AND RENDERING SUCCEEDS, FAILURE MESSAGE IF ANY STEP FAILS
+    // Display Success/Failure Message End
+
     setShowLoadModal(false);
     setModelName("");
   };
@@ -112,6 +158,7 @@ export default function Navbar() {
           }}>
             <li>
               <button 
+                // TODO: ADD disabled={isLoading} HERE TO DISABLE BUTTON WHILE LOADING
                 id="load-button"
                 onClick={() => setShowLoadModal(true)}
                 style={{
@@ -126,6 +173,8 @@ export default function Navbar() {
                   gap: "8px", 
                 }}
               >
+                <h3 style={{margin: "0", fontSize: "16px"}}>Load</h3>
+                {/* TODO: ADD LOADING SPINNER HERE INSIDE CONDITIONAL: {isLoading && <YourSpinnerComponent />} */}
                 <h3 style={{margin: "0", fontSize: "16px"}}>Load</h3>
               </button>
             </li>

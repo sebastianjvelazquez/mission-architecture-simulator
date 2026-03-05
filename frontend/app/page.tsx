@@ -198,15 +198,6 @@ const nodeTypes = {
 };
 
 // NODE EDIT MODAL COMPONENT
-/*
-Story: As a mission planner, I want to set CIA requirements on data flows for realistic simulations.
-Acceptance Criteria:
-[ ] Double-clicking edge opens properties modal
-[ ] Can set: label, data_type, cia_requirement (dropdown), latency_sensitivity
-[ ] Changes reflected in edge state and visual labels
-[ ] CIA properties sent to backend when saving
-[ ] Visual indicator on edges showing CIA type
-*/
 interface NodeModalProps {
   isOpen: boolean;
   nodeType: string;
@@ -361,27 +352,45 @@ function NodeEditModal({ isOpen, nodeType, currentName, currentCriticality, onCl
 }
 
 // EDGE EDIT MODAL COMPONENT
+/*
+Story: As a mission planner, I want to set CIA requirements on data flows for realistic simulations.
+Acceptance Criteria:
+1 [x] Double-clicking edge opens properties modal
+2 [x] Can set: label, data_type, cia_requirement (dropdown), latency_sensitivity
+3 [X] Changes reflected in edge state and visual labels (no visual label for other things but would look cluttered)
+4 [-] CIA properties sent to backend when saving (should be covered just with save logic already since its in data)
+5 [3] Visual indicator on edges showing CIA type (idk what this looks like yet, maybe a small colored dot or icon with tooltip on hover?)
+*/
 interface EdgeModalProps {
   isOpen: boolean;
   currentLabel: string;
+  currentDataTypeEdge: string;
+  currentCiaRequirement: string;
+  currentLatencySensitivity: string;
   onClose: () => void;
-  onSave: (label: string) => void;
+  onSave: (label: string, dataTypeEdge: string, ciaRequirement: string, latencySensitivity: string) => void;
 }
 
 
 // CONNECTION/EDGE EDIT MODAL FUNCTION
-function EdgeEditModal({ isOpen, currentLabel, onClose, onSave }: EdgeModalProps) {
+function EdgeEditModal({ isOpen, currentLabel, currentDataTypeEdge, currentCiaRequirement, currentLatencySensitivity, onClose, onSave }: EdgeModalProps) {
   const [label, setLabel] = useState(currentLabel);
+  const [dataTypeEdge, setDataTypeEdge] = useState(currentDataTypeEdge);
+  const [ciaRequirement, setCiaRequirement] = useState(currentCiaRequirement);
+  const [latencySensitivity, setLatencySensitivity] = useState(currentLatencySensitivity);
 
   // UPDATE LABEL STATE WHEN MODAL OPENS WITH NEW EDGE DATA
   React.useEffect(() => {
     if (isOpen) {
       setLabel(currentLabel);
+      setDataTypeEdge(currentDataTypeEdge);
+      setCiaRequirement(currentCiaRequirement);
+      setLatencySensitivity(currentLatencySensitivity);
     }
-  }, [isOpen, currentLabel]);
+  }, [isOpen, currentLabel, currentDataTypeEdge, currentCiaRequirement, currentLatencySensitivity]);
 
   const handleSave = () => {
-    onSave(label);
+    onSave(label, dataTypeEdge, ciaRequirement, latencySensitivity);
     onClose();
   };
 
@@ -409,6 +418,7 @@ function EdgeEditModal({ isOpen, currentLabel, onClose, onSave }: EdgeModalProps
       }}>
         <h3 style={{ marginTop: 0 }}>Edge Properties</h3>
         <br></br>
+        
         <label style={{ display: "block", marginBottom: "15px" }}>
           <span>Label:</span>
           <input
@@ -416,6 +426,75 @@ function EdgeEditModal({ isOpen, currentLabel, onClose, onSave }: EdgeModalProps
             value={label ?? ""}
             onChange={(e) => setLabel(e.target.value)}
             placeholder="Enter edge label"
+            style={{
+              width: "100%",
+              padding: "8px",
+              marginTop: "5px",
+              backgroundColor: "#2A2A2A",
+              color: "white",
+              border: "1px solid #444",
+              borderRadius: "4px",
+              boxSizing: "border-box",
+            }}
+          />
+        </label>
+
+        <br></br>
+
+        <label style={{ display: "block", marginBottom: "15px" }}>
+          <span>Data Type:</span>
+          <input
+            type="text"
+            value={dataTypeEdge ?? ""}
+            onChange={(e) => setDataTypeEdge(e.target.value)}
+            placeholder="Enter data type"
+            style={{
+              width: "100%",
+              padding: "8px",
+              marginTop: "5px",
+              backgroundColor: "#2A2A2A",
+              color: "white",
+              border: "1px solid #444",
+              borderRadius: "4px",
+              boxSizing: "border-box",
+            }}
+          />
+        </label>
+
+        <br></br>
+
+        <label style={{ display: "block", marginBottom: "15px" }}>
+          <span>CIA Requirement:</span>
+          <select
+            value={ciaRequirement ?? ""}
+            onChange={(e) => setCiaRequirement(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "8px",
+              marginTop: "5px",
+              backgroundColor: "#2A2A2A",
+              color: "white",
+              border: "1px solid #444",
+              borderRadius: "4px",
+              boxSizing: "border-box",
+            }}
+          >
+            <option value="">Select CIA Requirement</option>
+            <option value="Confidentiality">Confidentiality</option>
+            <option value="Integrity">Integrity</option>
+            <option value="Availability">Availability</option>
+          </select>
+        </label>
+
+        <br></br>
+
+        <label style={{ display: "block", marginBottom: "15px" }}>
+          <span>Latency Sensitivity:</span>
+          <input
+            type="text"
+            value={latencySensitivity ?? ""}
+            onChange={(e) => setLatencySensitivity(e.target.value)}
+            placeholder="Enter latency sensitivity"
             style={{
               width: "100%",
               padding: "8px",
@@ -503,6 +582,9 @@ export default function Home() {
         data: {
           sourceNodeType: sourceNode?.type,
           targetNodeType: targetNode?.type,
+          dataTypeEdge: "",
+          ciaRequirement: "",
+          latencySensitivity: "",
         }
       }, eds));
     },
@@ -516,10 +598,10 @@ export default function Home() {
   }, []);
 
   // HANDLE EDGE SAVE FROM MODAL
-  const handleEdgeSave = useCallback((label: string) => {
+  const handleEdgeSave = useCallback((label: string, dataTypeEdge: string, ciaRequirement: string, latencySensitivity: string) => {
     setEdges((eds) =>
       eds.map((e) =>
-        e.id === selectedEdge?.id ? { ...e, label } : e
+        e.id === selectedEdge?.id ? { ...e, label, data: { ...e.data, dataTypeEdge, ciaRequirement, latencySensitivity } } : e
       )
     );
     setIsEdgeModalOpen(false);
@@ -651,8 +733,8 @@ export default function Home() {
               color: "#808088",
               lineHeight: "1.5",
             }}>
-              <div style={{ marginBottom: "6px" }}>• Drag to canvas</div>
-              <div style={{ marginBottom: "6px" }}>• Double-click to edit</div>
+              <div style={{ marginBottom: "6px" }}>• Drag and drop components onto canvas</div>
+              <div style={{ marginBottom: "6px" }}>• Double-click to edit nodes/edges</div>
               <div>• Connect nodes to link</div>
             </div>
           </div>
@@ -792,6 +874,9 @@ export default function Home() {
       <EdgeEditModal
         isOpen={isEdgeModalOpen}
         currentLabel={selectedEdge?.label?.toString() || ""}
+        currentDataTypeEdge={selectedEdge?.data?.dataTypeEdge || ""}
+        currentCiaRequirement={selectedEdge?.data?.ciaRequirement || ""}
+        currentLatencySensitivity={selectedEdge?.data?.latencySensitivity || ""}
         onClose={() => setIsEdgeModalOpen(false)}
         onSave={handleEdgeSave}
       />
