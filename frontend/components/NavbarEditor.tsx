@@ -16,6 +16,21 @@ export default function Navbar() {
   const handleSave = () => {
     // TODO: ADD LOGIC FOR SAVING THE MODEL TO DB
     // SAVE MODEL WITH NAME, ASSOCIATE NAME WITH ID IN DB
+    /*
+    Save button sends POST request to /architectures
+
+    Components include: component_id, name, type, criticality, position
+
+    Flows include: source_component_id, target_component_id, data_type, cia_requirement
+
+    Success toast/notification displayed after save
+
+    Error messages shown if save fails
+
+    Architecture ID stored in state after save
+
+    Loading spinner shown during save operation
+    */
     console.log("Saving model:", modelName);
     setShowSaveModal(false);
     setModelName("");
@@ -24,6 +39,21 @@ export default function Navbar() {
   const handleLoad = () => {
     // TODO: ADD LOGIC FOR LOADING THE MODEL FROM DB
     // LOAD MODEL FROM DB BASED ON ID IN DATABASE
+    /*
+    Load button fetches list of architectures from GET /architectures
+
+    User can select an architecture from the list
+
+    Selected architecture loads components and flows onto canvas
+
+    Canvas cleared before loading new architecture
+
+    Architecture metadata displayed in UI
+
+    Error handling for failed loads or empty list
+
+    Loading spinner during fetch
+    */
     console.log("Loading model:", modelName);
     setShowLoadModal(false);
     setModelName("");
@@ -62,15 +92,15 @@ export default function Navbar() {
           alt="Logo" 
           width={365}
           height={50}
-          style={{position: "absolute", marginTop: "28px", objectFit: "contain", left: "-80px" }}
+          style={{position: "absolute", marginTop: "28px", objectFit: "contain", left: "0px" }}
         />
         
         <div style={{
           // NAVBAR ELIPSE SHAPE
-          backgroundColor: "rgba(15, 15, 20, 0.85)",
-          borderRadius: "25px",
+          //backgroundColor: "rgba(15, 15, 20, 0.85)",
+          //borderRadius: "25px",
           padding: "5px 15px",
-          border: "1px solid #333",
+          //border: "1px solid #333",
           marginTop: "20px",
         }}>
           <ul style={{

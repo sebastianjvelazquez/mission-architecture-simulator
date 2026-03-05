@@ -198,6 +198,15 @@ const nodeTypes = {
 };
 
 // NODE EDIT MODAL COMPONENT
+/*
+Story: As a mission planner, I want to set CIA requirements on data flows for realistic simulations.
+Acceptance Criteria:
+[ ] Double-clicking edge opens properties modal
+[ ] Can set: label, data_type, cia_requirement (dropdown), latency_sensitivity
+[ ] Changes reflected in edge state and visual labels
+[ ] CIA properties sent to backend when saving
+[ ] Visual indicator on edges showing CIA type
+*/
 interface NodeModalProps {
   isOpen: boolean;
   nodeType: string;

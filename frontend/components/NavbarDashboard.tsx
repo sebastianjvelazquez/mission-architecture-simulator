@@ -55,7 +55,7 @@ export default function Navbar() {
           alt="Logo" 
           width={365}
           height={50}
-          style={{position: "absolute", marginTop: "28px", objectFit: "contain", left: "-80px" }}
+          style={{position: "absolute", marginTop: "28px", objectFit: "contain", left: "0px" }}
         />
         
         <div style={{
