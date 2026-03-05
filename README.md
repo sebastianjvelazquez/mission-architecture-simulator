@@ -2489,7 +2489,31 @@ See [Local Development Setup](#local-development-setup) below.
 
 ### Creating a Pull Request
 
-**Branch Name:** feat/diagram-editor or fix/propagation-bug
+**Branch Name:** Use the convention below.
+
+### Branch Naming Convention
+
+All feature branches **must** follow this format:
+
+```
+feature/issue-{number}-short-description
+```
+
+- `{number}` = the GitHub issue number
+- `short-description` = lowercase, hyphen-separated (kebab-case)
+
+**Examples:**
+
+```
+feature/issue-43-wire-save-architecture
+feature/issue-52-wire-simulate-db
+feature/issue-66-update-ci-pipeline
+```
+
+**Do NOT use:**
+- PascalCase (`feature/issue-16-PostgreSQL-Schema-Design` ❌)
+- camelCase (`feature/issue-22-errorHandling` ❌)
+- Missing hyphens (`feature/issue-23-DBReview` ❌)
 
 **PR Description:**
 
