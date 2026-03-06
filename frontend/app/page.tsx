@@ -358,7 +358,7 @@ Acceptance Criteria:
 1 [x] Double-clicking edge opens properties modal
 2 [x] Can set: label, data_type, cia_requirement (dropdown), latency_sensitivity
 3 [X] Changes reflected in edge state and visual labels (no visual label for other things but would look cluttered)
-4 [-] CIA properties sent to backend when saving (should be covered just with save logic already since its in data)
+4 [x] CIA properties sent to backend when saving (should be covered just with save logic already since its in data)
 5 [3] Visual indicator on edges showing CIA type (idk what this looks like yet, maybe a small colored dot or icon with tooltip on hover?)
 */
 interface EdgeModalProps {
@@ -685,7 +685,12 @@ export default function Home() {
         backgroundRepeat: 'no-repeat',
         backgroundSize: 'cover',
        }}>
-      <Navbar />
+      <Navbar 
+        nodes={nodes}
+        edges={edges}
+        setNodes={setNodes}
+        setEdges={setEdges}
+      />
 
       {/* SIDEBAR */}
       <div style={{ display: "flex", flex: 1, gap: "14px", padding: "14px", overflow: "hidden"}}>

@@ -1,11 +1,17 @@
-# "npm install workflow" in frontend folder for workflow
-# "npm install" in frontend folder for dependencies
-# "npm install recharts" in frontend folder for charts
-# start app with "npm run dev" in frontend folder
-# ES7+ React plugin
-# Prettier plugin
-# Prettier ESLint plugin
-# Tailwind CSS IntelliSense plugin
-# Tailwind Docs plugin
-# Thunder Client plugin
-# CoPilot plugin
+# Frontend Dependencies and VSCode Extensions
+
+# Dependencies:
+next>=16.1.6
+react>=19.2.3
+react-dom>=19.2.3
+reactflow>=^11.11.4
+recharts>=^3.7.0
+workflow>=4.1.0-beta.60
+
+# VSCode Extensions:
+ES7+ React
+Prettier
+Prettier ESLint
+Tailwind CSS IntelliSense
+Tailwind Docs
+Thunder Client

@@ -4,105 +4,213 @@ import React, { useState } from "react";
 import Image from "next/image";
 import {Inter } from 'next/font/google';
 import Link from "next/dist/client/link";
-import handleDeleteAll from "@/app/page";
+import { Node, Edge, MarkerType } from "reactflow";
 
 const inter = Inter({ weight: "500", subsets: ['latin'] });
 
+type ArchitectureSummary = {
+  id: number;
+  name: string;
+};
+
+type LoadedArchitecture = {
+  id: number;
+  name: string;
+  components: Array<{
+    id: number;
+    component_id: string;
+    name: string;
+    component_type: string;
+    criticality: number;
+    position_x: number | null;
+    position_y: number | null;
+  }>;
+  flows: Array<{
+    id: number;
+    source_component_id: number;
+    target_component_id: number;
+    data_type: string | null;
+    cia_requirement: string | null;
+    latency_sensitivity: string | null;
+  }>;
+};
+
 {/* NAVBAR CODE FOR USE INSIDE PAGE.TSX */}
-export default function Navbar() {
+export default function Navbar({ nodes, edges, setNodes, setEdges}: {
+  nodes: Node[];
+  edges: Edge[];
+  setNodes: (nodes: Node[]) => void;
+  setEdges: (edges: Edge[]) => void;
+}) {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showLoadModal, setShowLoadModal] = useState(false);
   const [modelName, setModelName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [architectureList, setArchitectureList] = useState<ArchitectureSummary[]>([]);
+  const [selectedArchitectureId, setSelectedArchitectureId] = useState<number | null>(null);
 
-  const handleSave = () => {
-    // TODO: ADD LOGIC FOR SAVING THE MODEL TO DB
-    // SAVE MODEL WITH NAME, ASSOCIATE NAME WITH ID IN DB
-    /*
-    Save button sends POST request to /architectures
 
-    Components include: component_id, name, type, criticality, position
+  const handleSave = async () => {
+    setIsLoading(true);
 
-    Flows include: source_component_id, target_component_id, data_type, cia_requirement
+    // LOGIC OF SAVING MODEL
+    const payload = {
+      name: modelName, // TAKES FROM INPUT FIELD
+      description: "",
+      components: nodes.map(node => ({
+        component_id: node.id,
+        name: node.data.label,
+        component_type: node.type,
+        criticality: node.data.criticality || 1,
+        position_x: node.position.x,
+        position_y: node.position.y,
+      })),
+      flows: edges.map(edge => ({
+        source_component_id: edge.source,
+        target_component_id: edge.target,
+        data_type: edge.data?.dataTypeEdge || "",
+        cia_requirement: edge.data?.ciaRequirement || "",
+        latency_sensitivity: edge.data?.latencySensitivity || "",
+      })),
+    }
 
-    Success toast/notification displayed after save
+    // INTERACTING WITH BACKEND
+    try {
+      const response = await fetch('http://localhost:8000/architectures', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
 
-    Error messages shown if save fails
+      if (!response.ok) {
+        throw new Error('Failed to save architecture');
+      }
 
-    Architecture ID stored in state after save
+      const data = await response.json();
+      console.log('Saved Successfully. Architecture ID:', data.id);
 
-    Loading spinner shown during save operation
-    */
-    console.log("Saving model:", modelName);
-    setShowSaveModal(false);
-    setModelName("");
+      alert('Model Saved Successfully!');
+    } catch (error) {
+      console.error('Error saving architecture:', error);
+      alert('Failed to save model. Please try again.');
+    } finally {
+      setIsLoading(false);
+      setShowSaveModal(false);
+      setModelName("");
+    }
+
   };
 
-  const handleLoad = () => {
+  const handleLoad = async () => {
     // TODO: ADD LOGIC FOR LOADING THE MODEL FROM DB
     // LOAD MODEL FROM DB BASED ON ID IN DATABASE
     /*
-    1 [ ] Load button fetches list of architectures from GET /architectures
-    2 [ ] User can select an architecture from the list
-    3 [ ] Selected architecture loads components and flows onto canvas
+    1 [x] Load button fetches list of architectures from GET /architectures
+    2 [x] User can select an architecture from the list
+    3 [x] Selected architecture loads components and flows onto canvas
     4 [x] Canvas cleared before loading new architecture
-    5 [ ] Architecture metadata displayed in UI
-    6 [ ] Error handling for failed loads or empty list
-    7 [ ] Loading spinner during fetch
+    5 [x] Architecture metadata displayed in UI
+    6 [x] Error handling for failed loads or empty list
+    7 [x] Loading spinner during fetch
     */
-    /*
-    STRUCTURE:
-    1. DISPLAY LIST OF ARCHITECTURES IN MODAL (ID + NAME)
-    2. USER SELECTS ARCHITECTURE TO LOAD
-    3. FETCH COMPONENTS AND FLOWS FOR SELECTED ARCHITECTURE
-    4. CLEAR CURRENT CANVAS
-    5. DISPLAY LOADING SPINNER
-    6. RENDER COMPONENTS AND FLOWS ON CANVAS
-    7. DISPLAY SUCCESS OR FAILURE MESSAGE
-    */
-    // TODO: SET LOADING TO TRUE WHEN FETCHING STARTS → setIsLoading(true);
-
-    // Display/Select Start
-    /*
-    for x in db, display name and id in modal as options
-    user clicks on one option → that is the architecture we load (store selected architecture id in state)
-    */
-    // Display/Select End
-
-    // Display Loading Spinner Start
     setIsLoading(true);
-    // Display Loading Spinner End
 
-    // Fetch Components Start
-    /* 
-    fetch all data from architecture (nodes, edges, id, label, criticality, cia requirements, etc...)
-    store all data in setEdgesNew and setNodesNew as temp array so if other failure the current architecture doesn't delete
-    if works keep going, else display error message
-    */
-    // Fetch Components End
+    try{
+      const response = await fetch('http://localhost:8000/architectures');
+      if (!response.ok) {
+        throw new Error('Failed to fetch architecture list');
+      }
+      const list = await response.json();
 
-    // Clear Canvas Start
-    /*
-    clear components, start of real loading actions
-    if works keep going, else display error message
-    */
-    handleDeleteAll();
-    // Clear Canvas End
+      setArchitectureList(list);
+      setSelectedArchitectureId(null);
+      setShowLoadModal(true);
+    } catch (error) {
+      console.error('Error fetching architectures:', error);
+      alert('Failed to fetch architectures. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    // Render Components and Flows Start
-    /*
-    assign setEdges and setNodes to the new versions of each, ports all data to current structure
-    if works keep going, else display error message
-    */
-    // Render Components and Flows End
+  const handleLoadSelectedArchitecture = async () => {
+    if (!selectedArchitectureId) {
+      alert('Please select an architecture to load.');
+      return;
+    }
 
-    // Display Success/Failure Message Start
-    setIsLoading(false); // not loading anymore
-    // TODO: DISPLAY SUCCESS MESSAGE IF FETCH AND RENDERING SUCCEEDS, FAILURE MESSAGE IF ANY STEP FAILS
-    // Display Success/Failure Message End
+    setIsLoading(true);
+    try {
+      const response = await fetch(`http://localhost:8000/architectures/${selectedArchitectureId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch selected architecture');
+      }
 
-    setShowLoadModal(false);
-    setModelName("");
+      const architecture: LoadedArchitecture = await response.json();
+
+      const dbIdToFrontendId = new Map<number, string>();
+      for (const component of architecture.components) {
+        dbIdToFrontendId.set(component.id, component.component_id);
+      }
+
+      const loadedNodes: Node[] = architecture.components.map((component) => ({
+        id: component.component_id,
+        type: component.component_type,
+        position: {
+          x: component.position_x ?? 0,
+          y: component.position_y ?? 0,
+        },
+        data: {
+          label: component.name,
+          criticality: component.criticality,
+        },
+      }));
+
+      const loadedEdges: Edge[] = architecture.flows
+        .map((flow) => {
+          const source = dbIdToFrontendId.get(flow.source_component_id);
+          const target = dbIdToFrontendId.get(flow.target_component_id);
+
+          if (!source || !target) {
+            return null;
+          }
+
+          return {
+            id: `e-${flow.id}`,
+            source,
+            target,
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: '#fff',
+            },
+            style: {
+              stroke: '#fff',
+              strokeWidth: 2,
+            },
+            label: flow.data_type ?? '',
+            labelStyle: { fill: '#fff', fontWeight: 500 },
+            labelBgStyle: { fill: '#141414' },
+            data: {
+              dataTypeEdge: flow.data_type ?? '',
+              ciaRequirement: flow.cia_requirement ?? '',
+              latencySensitivity: flow.latency_sensitivity ?? '',
+            },
+          } as Edge;
+        })
+        .filter((edge): edge is Edge => edge !== null);
+
+      setNodes(loadedNodes);
+      setEdges(loadedEdges);
+      setShowLoadModal(false);
+      setSelectedArchitectureId(null);
+    } catch (error) {
+      console.error('Error loading selected architecture:', error);
+      alert('Failed to load selected architecture. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   React.useEffect(() => {
@@ -160,7 +268,7 @@ export default function Navbar() {
               <button 
                 // TODO: ADD disabled={isLoading} HERE TO DISABLE BUTTON WHILE LOADING
                 id="load-button"
-                onClick={() => setShowLoadModal(true)}
+                onClick={handleLoad}
                 style={{
                   padding: "10px 16px",
                   backgroundColor: "transparent",
@@ -173,8 +281,20 @@ export default function Navbar() {
                   gap: "8px", 
                 }}
               >
-                <h3 style={{margin: "0", fontSize: "16px"}}>Load</h3>
-                {/* TODO: ADD LOADING SPINNER HERE INSIDE CONDITIONAL: {isLoading && <YourSpinnerComponent />} */}
+                {isLoading && (
+                  <span
+                    aria-label="Loading"
+                    style={{
+                      width: "14px",
+                      height: "14px",
+                      border: "2px solid rgba(255,255,255,0.35)",
+                      borderTop: "2px solid #ffffff",
+                      borderRadius: "50%",
+                      display: "inline-block",
+                      animation: "spin 0.8s linear infinite",
+                    }}
+                  />
+                )}
                 <h3 style={{margin: "0", fontSize: "16px"}}>Load</h3>
               </button>
             </li>
@@ -317,28 +437,41 @@ export default function Navbar() {
           color: "white",
         }}>
           <h2 style={{ marginTop: 0, marginBottom: "20px" }}>Load Model</h2>
-          <input
-            type="text"
-            placeholder="Enter model ID:"
-            value={modelName}
-            onChange={(e) => setModelName(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "10px",
-              marginBottom: "20px",
-              borderRadius: "4px",
-              border: "1px solid #333",
-              backgroundColor: "#0a0a0a",
-              color: "white",
-              fontSize: "14px",
-              boxSizing: "border-box",
-            }}
-          />
+          <div style={{ maxHeight: "240px", overflowY: "auto", marginBottom: "20px" }}>
+            {architectureList.length === 0 ? (
+              <p style={{ color: "#aaa", margin: 0 }}>No saved architectures found.</p>
+            ) : (
+              architectureList.map((architecture) => (
+                <button
+                  key={architecture.id}
+                  type="button"
+                  onClick={() => setSelectedArchitectureId(architecture.id)}
+                  style={{
+                    width: "100%",
+                    textAlign: "left",
+                    marginBottom: "8px",
+                    padding: "10px",
+                    borderRadius: "4px",
+                    border:
+                      selectedArchitectureId === architecture.id
+                        ? "1px solid #0070f3"
+                        : "1px solid #333",
+                    backgroundColor:
+                      selectedArchitectureId === architecture.id ? "#0b2a4a" : "#0a0a0a",
+                    color: "white",
+                    cursor: "pointer",
+                  }}
+                >
+                  {architecture.name} (ID: {architecture.id})
+                </button>
+              ))
+            )}
+          </div>
           <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
             <button
               onClick={() => {
                 setShowLoadModal(false);
-                setModelName("");
+                setSelectedArchitectureId(null);
               }}
               style={{
                 padding: "10px 20px",
@@ -352,15 +485,15 @@ export default function Navbar() {
               Cancel
             </button>
             <button
-              onClick={handleLoad}
-              disabled={!modelName.trim()}
+              onClick={handleLoadSelectedArchitecture}
+              disabled={!selectedArchitectureId}
               style={{
                 padding: "10px 20px",
-                backgroundColor: modelName.trim() ? "#0070f3" : "#555",
+                backgroundColor: selectedArchitectureId ? "#0070f3" : "#555",
                 color: "white",
                 border: "none",
                 borderRadius: "4px",
-                cursor: modelName.trim() ? "pointer" : "not-allowed",
+                cursor: selectedArchitectureId ? "pointer" : "not-allowed",
               }}
             >
               Load
@@ -369,6 +502,13 @@ export default function Navbar() {
         </div>
       </div>
     )}
+
+    <style jsx>{`
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+    `}</style>
     </>
   );
 }
