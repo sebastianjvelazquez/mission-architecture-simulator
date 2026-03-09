@@ -33,7 +33,7 @@ export default function Navbar() {
 
   return (
     <>
-    <div className="container mx-auto px-6 py-6 space-y-6 max-w-7x5">
+    <div className="container mx-auto px-6 py-2 space-y-6 max-w-7x5">
       <nav 
       className={inter.className}
       style={{
@@ -48,22 +48,20 @@ export default function Navbar() {
         position: "relative",
         justifyContent: "center",
       }}>
-        <Image 
-        // MAKE LOGO GRADIENT BLUE AND WHITE, OTHER IMAGES ARE HEIGHT 16, LOGO IS 365X50
-        // MAKE LOGO SVG SO IT SCALES AND LOADS BETTER, SAME WITH ALL TYPES OF ICONS
-          src="/TextNewLogo.svg"
+        <Image
+          src="/TextMAS.svg"
           alt="Logo" 
           width={365}
           height={50}
-          style={{position: "absolute", marginTop: "28px", objectFit: "contain", left: "0px" }}
+          style={{position: "fixed", marginTop: "20px", objectFit: "contain", left: "40px" }}
         />
         
         <div style={{
           // NAVBAR ELIPSE SHAPE
-          backgroundColor: "rgba(15, 15, 20, 0.85)",
-          borderRadius: "25px",
+          //backgroundColor: "rgba(15, 15, 20, 0.85)",
+          //borderRadius: "25px",
           padding: "5px 15px",
-          border: "1px solid #333",
+          //border: "1px solid #333",
           marginTop: "20px",
         }}>
           <ul style={{

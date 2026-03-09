@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useRef, useState } from "react";
+import Image from "next/image";
 import ReactFlow, {
   Background,
   Controls,
@@ -20,8 +21,6 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import Navbar from "@/components/NavbarEditor";
-import { nodeServerAppPaths } from "next/dist/build/webpack/plugins/pages-manifest-plugin";
-import { on } from "events";
 
 // ALL CUSTOM NODES
 function SensorNode({ data }: { data: { label: string } }) {
@@ -31,7 +30,7 @@ function SensorNode({ data }: { data: { label: string } }) {
         padding: "10px 20px",
         borderRadius: "100px",
         background: "rgba(0, 0, 0, 0.5)",
-        border: "1px solid white",
+        border: "1px solid #ED1C23",
       }}
     >
       {/* Top Handle */}
@@ -58,7 +57,7 @@ function ComputeNode({ data }: { data: { label: string } }) {
         padding: "10px 20px",
         borderRadius: "100px",
         background: "rgba(0, 0, 0, 0.5)",
-        border: "1px solid white",
+        border: "1px solid #4DA3FF",
       }}
     >
       {/* Top Handle */}
@@ -85,7 +84,7 @@ function CommsLinkNode({ data }: { data: { label: string } }) {
         padding: "10px 20px",
         borderRadius: "100px",
         background: "rgba(0, 0, 0, 0.5)",
-        border: "1px solid white",
+        border: "1px solid #34D399",
       }}
     >
       {/* Top Handle */}
@@ -112,7 +111,7 @@ function ControlNode({ data }: { data: { label: string } }) {
         padding: "10px 20px",
         borderRadius: "100px",
         background: "rgba(0, 0, 0, 0.5)",
-        border: "1px solid white",
+        border: "1px solid #F59E0B",
       }}
     >
       {/* Top Handle */}
@@ -139,7 +138,7 @@ function StorageNode({ data }: { data: { label: string } }) {
         padding: "10px 20px",
         borderRadius: "100px",
         background: "rgba(0, 0, 0, 0.5)",
-        border: "1px solid white",
+        border: "1px solid #A78BFA",
       }}
     >
       {/* Top Handle */}
@@ -166,7 +165,7 @@ function ExternalNode({ data }: { data: { label: string } }) {
         padding: "10px 20px",
         borderRadius: "100px",
         background: "rgba(0, 0, 0, 0.5)",
-        border: "1px solid white",
+        border: "1px solid #F472B6",
       }}
     >
       {/* Top Handle */}
@@ -196,6 +195,16 @@ const nodeTypes = {
   Storage: StorageNode,
   External: ExternalNode,
 };
+
+// SIDEBAR COLORS USE FOR OUTLINE
+const sidebarComponents = [
+  { type: "Sensor", color: "#ED1C23"},
+  { type: "Compute", color: "#4DA3FF"},
+  { type: "CommsLink", color: "#34D399"},
+  { type: "Control", color: "#F59E0B"},
+  { type: "Storage", color: "#A78BFA"},
+  { type: "External", color: "#F472B6"},
+];
 
 // NODE EDIT MODAL COMPONENT
 interface NodeModalProps {
@@ -760,12 +769,12 @@ export default function Home() {
                 gap: "8px",
               }}
             >
-              {["Sensor", "Compute", "CommsLink", "Control", "Storage", "External"].map((type) => (
-                <li key={type}>
+              {sidebarComponents.map((component) => (
+                <li key={component.type}>
                   <button
                     type="button"
                     draggable
-                    onDragStart={(event) => onDragStart(event, type)}
+                    onDragStart={(event) => onDragStart(event, component.type)}
                     style={{
                       width: "100%",
                       padding: "12px 14px",
@@ -788,7 +797,19 @@ export default function Home() {
                       e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
                     }}
                   >
-                    {type}
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span
+                        style={{
+                          width: "8px",
+                          height: "8px",
+                          borderRadius: "999px",
+                          backgroundColor: component.color,
+                          boxShadow: `0 0 8px ${component.color}`,
+                          flexShrink: 0,
+                        }}
+                      />
+                      <span>{component.type}</span>
+                    </div>
                   </button>
                 </li>
               ))}

@@ -32,6 +32,11 @@ type LoadedArchitecture = {
     data_type: string | null;
     cia_requirement: string | null;
     latency_sensitivity: string | null;
+    // NEED TO ADD THESE FIELDS TO DB AND BACKEND TO TRACK HANDLE IDS FOR REACT FLOW CONNECTIONS
+    // THIS WILL BE TOP PRIORITY FOR NOW AS WITHOUT THIS CANNOT LOAD MODELS WITH PRECISION, IF ACCEPTABLE CAN DEFAULT TO SAME LOGIC BUT NEED TO MAKE SURE
+    // ADDITIONALLY NEED TO MAKE SURE THESE VARIABLES ARE UPDATED ACCORDINGLY THROUGHOUT BOTH EDITOR AND DASHBOARD NAVBARS FOR SAVING AND LOADING
+    source_handle: string | null;
+    target_handle: string | null;
   }>;
 };
 
@@ -71,6 +76,8 @@ export default function Navbar({ nodes, edges, setNodes, setEdges}: {
         data_type: edge.data?.dataTypeEdge || "",
         cia_requirement: edge.data?.ciaRequirement || "",
         latency_sensitivity: edge.data?.latencySensitivity || "",
+        source_handle: edge.sourceHandle || "right",
+        target_handle: edge.targetHandle || "left",
       })),
     }
 
@@ -104,17 +111,6 @@ export default function Navbar({ nodes, edges, setNodes, setEdges}: {
   };
 
   const handleLoad = async () => {
-    // TODO: ADD LOGIC FOR LOADING THE MODEL FROM DB
-    // LOAD MODEL FROM DB BASED ON ID IN DATABASE
-    /*
-    1 [x] Load button fetches list of architectures from GET /architectures
-    2 [x] User can select an architecture from the list
-    3 [x] Selected architecture loads components and flows onto canvas
-    4 [x] Canvas cleared before loading new architecture
-    5 [x] Architecture metadata displayed in UI
-    6 [x] Error handling for failed loads or empty list
-    7 [x] Loading spinner during fetch
-    */
     setIsLoading(true);
 
     try{
@@ -181,6 +177,8 @@ export default function Navbar({ nodes, edges, setNodes, setEdges}: {
             id: `e-${flow.id}`,
             source,
             target,
+            sourceHandle: flow.source_handle ?? 'right',
+            targetHandle: flow.target_handle ?? 'left',
             markerEnd: {
               type: MarkerType.ArrowClosed,
               color: '#fff',
@@ -226,7 +224,7 @@ export default function Navbar({ nodes, edges, setNodes, setEdges}: {
 
   return (
     <>
-    <div className="container mx-auto px-6 py-6 space-y-6 max-w-7x5">
+    <div className="container mx-auto px-6 py-2 space-y-6 max-w-7x5">
       <nav 
       className={inter.className}
       style={{
@@ -242,11 +240,11 @@ export default function Navbar({ nodes, edges, setNodes, setEdges}: {
         justifyContent: "center",
       }}>
         <Image 
-          src="/TextNewLogo.svg"
+          src="/TextMAS.svg"
           alt="Logo" 
           width={365}
           height={50}
-          style={{position: "absolute", marginTop: "28px", objectFit: "contain", left: "0px" }}
+          style={{position: "fixed", marginTop: "20px", objectFit: "contain", left: "40px" }}
         />
         
         <div style={{
@@ -265,8 +263,7 @@ export default function Navbar({ nodes, edges, setNodes, setEdges}: {
             gap: "0px",
           }}>
             <li>
-              <button 
-                // TODO: ADD disabled={isLoading} HERE TO DISABLE BUTTON WHILE LOADING
+              <button
                 id="load-button"
                 onClick={handleLoad}
                 style={{
@@ -433,8 +430,10 @@ export default function Navbar({ nodes, edges, setNodes, setEdges}: {
           backgroundColor: "#1a1a1a",
           padding: "30px",
           borderRadius: "8px",
-          minWidth: "400px",
+          width: "400px",
+          maxWidth: "90vw",
           color: "white",
+          boxSizing: "border-box",
         }}>
           <h2 style={{ marginTop: 0, marginBottom: "20px" }}>Load Model</h2>
           <div style={{ maxHeight: "240px", overflowY: "auto", marginBottom: "20px" }}>
@@ -460,7 +459,12 @@ export default function Navbar({ nodes, edges, setNodes, setEdges}: {
                       selectedArchitectureId === architecture.id ? "#0b2a4a" : "#0a0a0a",
                     color: "white",
                     cursor: "pointer",
+                    boxSizing: "border-box",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
                   }}
+                  title={architecture.name}
                 >
                   {architecture.name} (ID: {architecture.id})
                 </button>
@@ -503,6 +507,8 @@ export default function Navbar({ nodes, edges, setNodes, setEdges}: {
       </div>
     )}
 
+    {/* LOADING SPINNER CODE */}
+    {/* MIGHT CHANGE, GOOD FOR NOW */}
     <style jsx>{`
       @keyframes spin {
         from { transform: rotate(0deg); }
