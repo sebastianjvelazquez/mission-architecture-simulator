@@ -360,16 +360,6 @@ function NodeEditModal({ isOpen, nodeType, currentName, currentCriticality, onCl
   );
 }
 
-// EDGE EDIT MODAL COMPONENT
-/*
-Story: As a mission planner, I want to set CIA requirements on data flows for realistic simulations.
-Acceptance Criteria:
-1 [x] Double-clicking edge opens properties modal
-2 [x] Can set: label, data_type, cia_requirement (dropdown), latency_sensitivity
-3 [X] Changes reflected in edge state and visual labels (no visual label for other things but would look cluttered)
-4 [x] CIA properties sent to backend when saving (should be covered just with save logic already since its in data)
-5 [3] Visual indicator on edges showing CIA type (idk what this looks like yet, maybe a small colored dot or icon with tooltip on hover?)
-*/
 interface EdgeModalProps {
   isOpen: boolean;
   currentLabel: string;
@@ -433,7 +423,7 @@ function EdgeEditModal({ isOpen, currentLabel, currentDataTypeEdge, currentCiaRe
           <input
             type="text"
             value={label ?? ""}
-            onChange={(e) => setLabel(e.target.value)}
+            onChange={(e) => setLabel(e.target.value) }
             placeholder="Enter edge label"
             style={{
               width: "100%",
@@ -572,6 +562,7 @@ export default function Home() {
   // CONNECTIONS BETWEEN NODES (ARROWS)
   const onConnect = useCallback(
     (connection: Connection) => {
+      rawLabel: "";
       const sourceNode = nodes.find((n) => n.id === connection.source);
       const targetNode = nodes.find((n) => n.id === connection.target);
 
@@ -592,6 +583,7 @@ export default function Home() {
           sourceNodeType: sourceNode?.type,
           targetNodeType: targetNode?.type,
           dataTypeEdge: "",
+          rawLabel: "",
           ciaRequirement: "",
           latencySensitivity: "",
         }
@@ -608,9 +600,12 @@ export default function Home() {
 
   // HANDLE EDGE SAVE FROM MODAL
   const handleEdgeSave = useCallback((label: string, dataTypeEdge: string, ciaRequirement: string, latencySensitivity: string) => {
+    const rawLabel = label.trim();
+    const cia = ciaRequirement.trim();
+    const displayLabel = [rawLabel, cia].filter(Boolean).join(" - ");
     setEdges((eds) =>
       eds.map((e) =>
-        e.id === selectedEdge?.id ? { ...e, label, data: { ...e.data, dataTypeEdge, ciaRequirement, latencySensitivity } } : e
+        e.id === selectedEdge?.id ? { ...e, label: displayLabel, data: { ...e.data, dataTypeEdge, ciaRequirement, latencySensitivity, rawLabel } } : e
       )
     );
     setIsEdgeModalOpen(false);
@@ -899,7 +894,7 @@ export default function Home() {
       {/* EDGE EDIT MODAL */}
       <EdgeEditModal
         isOpen={isEdgeModalOpen}
-        currentLabel={selectedEdge?.label?.toString() || ""}
+        currentLabel={selectedEdge?.data?.rawLabel || ""}
         currentDataTypeEdge={selectedEdge?.data?.dataTypeEdge || ""}
         currentCiaRequirement={selectedEdge?.data?.ciaRequirement || ""}
         currentLatencySensitivity={selectedEdge?.data?.latencySensitivity || ""}
