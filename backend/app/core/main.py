@@ -27,6 +27,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.architectures import router as architectures_router
+from app.api.scenarios import results_router as simulation_results_router
+from app.api.scenarios import router as scenarios_router
 from app.core.config import get_settings
 from app.core.simulate import router as simulate_router
 
@@ -115,6 +117,10 @@ async def health_check():
 # Register API routers
 # Architectures CRUD endpoints (POST, GET list, GET by id)
 app.include_router(architectures_router)
+
+# Scenario persistence endpoints
+app.include_router(scenarios_router)
+app.include_router(simulation_results_router)
 
 # Simulation endpoint (POST /architectures/{id}/simulate)
 app.include_router(simulate_router)
