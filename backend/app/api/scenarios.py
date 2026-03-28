@@ -119,7 +119,11 @@ def list_scenarios(
         )
         return [ScenarioResponse.model_validate(row) for row in rows]
     except SQLAlchemyError as exc:
-        logger.error("Database error listing scenarios for architecture %d: %s", architecture_id, exc)
+        logger.error(
+        "Database error listing scenarios for architecture %d: %s",
+        architecture_id,
+        exc,
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve scenarios. Database error.",
