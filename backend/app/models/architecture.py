@@ -210,7 +210,7 @@ class Scenario(Base):
         back_populates="scenario",
         cascade="all, delete-orphan",
         passive_deletes=True,
-        lazy="select",
+        lazy="selectin",
     )
 
     __table_args__ = (

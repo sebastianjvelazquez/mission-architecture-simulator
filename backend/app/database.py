@@ -16,15 +16,15 @@ settings = get_settings()
 
 engine = create_engine(
     settings.DATABASE_URL,
-    pool_size=5,
-    max_overflow=10,
+    pool_size=10,
+    max_overflow=20,
     pool_timeout=30,
     pool_pre_ping=True,
 )
 
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
-_SLOW_QUERY_THRESHOLD_MS = 200
+_SLOW_QUERY_THRESHOLD_MS = 100
 
 
 @event.listens_for(engine, "before_cursor_execute")
