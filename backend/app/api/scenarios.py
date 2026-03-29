@@ -52,8 +52,7 @@ def _validate_scenario_payload(payload: ScenarioCreate) -> tuple[str, dict]:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=(
-                "Unsupported scenario_type. "
-                f"Allowed values: {sorted(_ALLOWED_SCENARIO_TYPES)}"
+                "Unsupported scenario_type. " f"Allowed values: {sorted(_ALLOWED_SCENARIO_TYPES)}"
             ),
         )
 
