@@ -1,4 +1,4 @@
-"""CRUD endpoints for architectures: POST, PUT, GET list, GET by id."""
+"""CRUD endpoints for architectures: POST, GET list, GET by id, DELETE."""
 
 import logging
 
@@ -326,3 +326,45 @@ def get_architecture(
         )
 
     return ArchitectureResponse.model_validate(arch)
+
+
+@router.delete(
+    "/{architecture_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete an architecture and all dependent records",
+    description=(
+        "Deletes an architecture by id. Database cascades remove related "
+        "components, flows, scenarios, and simulation results."
+    ),
+)
+def delete_architecture(
+    architecture_id: int,
+    db: Session = Depends(get_db),
+) -> None:
+    try:
+        arch = db.query(Architecture).filter(Architecture.id == architecture_id).first()
+    except SQLAlchemyError as exc:
+        logger.error("Database error fetching architecture %d for delete: %s", architecture_id, exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete architecture. Database error.",
+        ) from exc
+
+    if arch is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Architecture with id {architecture_id} not found.",
+        )
+
+    try:
+        db.delete(arch)
+        db.commit()
+    except SQLAlchemyError as exc:
+        db.rollback()
+        logger.error("Database error deleting architecture %d: %s", architecture_id, exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete architecture. Database error.",
+        ) from exc
+
+    return None
