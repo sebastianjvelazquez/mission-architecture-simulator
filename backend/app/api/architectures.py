@@ -251,7 +251,11 @@ def update_architecture(
     except IntegrityError as exc:
         db.rollback()
         detail = _integrity_error_detail(exc)
-        logger.warning("Constraint violation updating architecture %d: %s", architecture_id, exc.orig)
+        logger.warning(
+            "Constraint violation updating architecture %d: %s",
+            architecture_id,
+            exc.orig,
+        )
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=detail,
