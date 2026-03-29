@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+import csv
+import io
+import json
 import logging
+from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.database import get_db
 from app.models.architecture import Architecture, Component, Scenario, SimulationResult
@@ -248,3 +253,95 @@ def list_simulation_results(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve simulation results. Database error.",
         ) from exc
+
+
+@results_router.get(
+    "/{scenario_id}/export",
+    summary="Export scenario results as JSON or CSV",
+)
+def export_scenario_results(
+    scenario_id: int,
+    format: Literal["json", "csv"] = Query(
+        default="json",
+        description="Download format: json or csv",
+    ),
+    db: Session = Depends(get_db),
+) -> StreamingResponse:
+    scenario = (
+        db.query(Scenario)
+        .options(selectinload(Scenario.results))
+        .filter(Scenario.id == scenario_id)
+        .first()
+    )
+    if scenario is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Scenario with id {scenario_id} not found.",
+        )
+
+    if format == "json":
+        payload = {
+            "id": scenario.id,
+            "architecture_id": scenario.architecture_id,
+            "scenario_type": scenario.scenario_type,
+            "target_component_id": scenario.target_component_id,
+            "parameters": scenario.parameters or {},
+            "created_at": scenario.created_at.isoformat() if scenario.created_at else None,
+            "results": [
+                {
+                    "id": result.id,
+                    "baseline_score": result.baseline_score,
+                    "compromised_score": result.compromised_score,
+                    "affected_components": result.affected_components or [],
+                    "attack_path": result.attack_path or [],
+                    "explanation": result.explanation,
+                    "created_at": result.created_at.isoformat() if result.created_at else None,
+                }
+                for result in scenario.results
+            ],
+        }
+        content = json.dumps(payload, indent=2)
+        return StreamingResponse(
+            io.BytesIO(content.encode("utf-8")),
+            media_type="application/json",
+            headers={"Content-Disposition": f"attachment; filename=scenario_{scenario_id}.json"},
+        )
+
+    output = io.StringIO()
+    writer = csv.DictWriter(
+        output,
+        fieldnames=[
+            "scenario_id",
+            "scenario_type",
+            "target_component_id",
+            "result_id",
+            "affected_component_id",
+            "baseline_score",
+            "compromised_score",
+            "score_delta",
+        ],
+    )
+    writer.writeheader()
+
+    for result in scenario.results:
+        affected = result.affected_components or []
+        rows = affected if affected else [""]
+        for component_id in rows:
+            writer.writerow(
+                {
+                    "scenario_id": scenario.id,
+                    "scenario_type": scenario.scenario_type,
+                    "target_component_id": scenario.target_component_id,
+                    "result_id": result.id,
+                    "affected_component_id": component_id,
+                    "baseline_score": result.baseline_score,
+                    "compromised_score": result.compromised_score,
+                    "score_delta": result.compromised_score - result.baseline_score,
+                }
+            )
+
+    return StreamingResponse(
+        io.BytesIO(output.getvalue().encode("utf-8")),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=scenario_{scenario_id}.csv"},
+    )

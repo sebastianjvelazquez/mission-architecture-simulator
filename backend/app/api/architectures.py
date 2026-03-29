@@ -1,4 +1,4 @@
-"""CRUD endpoints for architectures: POST, GET list, GET by id, DELETE."""
+"""CRUD endpoints for architectures: POST, PUT, GET list, GET by id, DELETE."""
 
 import logging
 
@@ -202,7 +202,6 @@ def update_architecture(
         arch.properties = payload.properties or {}
 
         # Full replace strategy: remove existing child records and rebuild.
-        # Deleting ORM instances avoids identity-map collisions when reusing ids.
         for flow in list(arch.flows):
             db.delete(flow)
         for component in list(arch.components):
