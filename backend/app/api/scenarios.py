@@ -152,8 +152,7 @@ def delete_scenario(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=(
-                f"Scenario with id {scenario_id} not found for "
-                f"architecture {architecture_id}."
+                f"Scenario with id {scenario_id} not found for " f"architecture {architecture_id}."
             ),
         )
 
