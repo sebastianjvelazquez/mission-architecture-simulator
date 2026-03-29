@@ -51,6 +51,13 @@ class Architecture(Base):
         passive_deletes=True,
         lazy="selectin",
     )
+    scenarios = relationship(
+        "Scenario",
+        back_populates="architecture",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        lazy="select",
+    )
 
     __table_args__ = (
         Index("ix_architectures_name", "name"),
@@ -100,6 +107,13 @@ class Component(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
         lazy="selectin",
+    )
+    scenarios = relationship(
+        "Scenario",
+        back_populates="target_component",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        lazy="select",
     )
 
     __table_args__ = (
@@ -167,4 +181,78 @@ class Flow(Base):
         return (
             f"<Flow(id={self.id}, source={self.source_component_id}, "
             f"target={self.target_component_id})>"
+        )
+
+
+class Scenario(Base):
+
+    __tablename__ = "scenarios"
+
+    id: int = Column(Integer, primary_key=True, autoincrement=True)
+    architecture_id: int = Column(
+        Integer,
+        ForeignKey("architectures.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    scenario_type: str = Column(String(100), nullable=False)
+    target_component_id: int = Column(
+        Integer,
+        ForeignKey("components.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    parameters: dict | None = Column(JSONB, nullable=True, default=dict)
+    created_at: datetime = Column(DateTime(timezone=True), nullable=False, default=_utcnow)
+
+    architecture = relationship("Architecture", back_populates="scenarios")
+    target_component = relationship("Component", back_populates="scenarios")
+    results = relationship(
+        "SimulationResult",
+        back_populates="scenario",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        lazy="select",
+    )
+
+    __table_args__ = (
+        Index("ix_scenarios_architecture_id", "architecture_id"),
+        Index("ix_scenarios_scenario_type", "scenario_type"),
+        Index("ix_scenarios_target_component_id", "target_component_id"),
+        Index("ix_scenarios_created_at", "created_at"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<Scenario(id={self.id}, architecture_id={self.architecture_id}, "
+            f"scenario_type='{self.scenario_type}')>"
+        )
+
+
+class SimulationResult(Base):
+
+    __tablename__ = "simulation_results"
+
+    id: int = Column(Integer, primary_key=True, autoincrement=True)
+    scenario_id: int = Column(
+        Integer,
+        ForeignKey("scenarios.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    baseline_score: float = Column(Float, nullable=False)
+    compromised_score: float = Column(Float, nullable=False)
+    affected_components: list[int] | None = Column(JSONB, nullable=True, default=list)
+    attack_path: list[str] | None = Column(JSONB, nullable=True, default=list)
+    explanation: str | None = Column(Text, nullable=True)
+    created_at: datetime = Column(DateTime(timezone=True), nullable=False, default=_utcnow)
+
+    scenario = relationship("Scenario", back_populates="results")
+
+    __table_args__ = (
+        Index("ix_simulation_results_scenario_id", "scenario_id"),
+        Index("ix_simulation_results_created_at", "created_at"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<SimulationResult(id={self.id}, scenario_id={self.scenario_id}, "
+            f"baseline={self.baseline_score}, compromised={self.compromised_score})>"
         )

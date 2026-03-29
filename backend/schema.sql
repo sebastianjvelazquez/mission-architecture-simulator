@@ -14,6 +14,8 @@
 -- If you're running this manually on production, COMMENT OUT the lines below!
 -- ============================================================================
 
+DROP TABLE IF EXISTS simulation_results CASCADE;
+DROP TABLE IF EXISTS scenarios CASCADE;
 DROP TABLE IF EXISTS flows CASCADE;
 DROP TABLE IF EXISTS components CASCADE;
 DROP TABLE IF EXISTS architectures CASCADE;
@@ -139,6 +141,53 @@ CREATE INDEX idx_flows_source_target ON flows(source_component_id, target_compon
 
 -- GIN index for JSONB property queries
 CREATE INDEX idx_flows_properties ON flows USING GIN (properties);
+
+
+-- ============================================================================
+-- TABLE: scenarios
+-- ============================================================================
+-- Description: Saved attack scenarios for replay/comparison.
+-- ============================================================================
+
+CREATE TABLE scenarios (
+    id SERIAL PRIMARY KEY,
+    architecture_id INTEGER NOT NULL REFERENCES architectures(id) ON DELETE CASCADE,
+    scenario_type VARCHAR(100) NOT NULL,
+    target_component_id INTEGER NOT NULL REFERENCES components(id) ON DELETE CASCADE,
+    parameters JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for scenarios
+CREATE INDEX idx_scenarios_architecture_id ON scenarios(architecture_id);
+CREATE INDEX idx_scenarios_scenario_type ON scenarios(scenario_type);
+CREATE INDEX idx_scenarios_target_component_id ON scenarios(target_component_id);
+CREATE INDEX idx_scenarios_created_at ON scenarios(created_at DESC);
+CREATE INDEX idx_scenarios_parameters ON scenarios USING GIN (parameters);
+
+
+-- ============================================================================
+-- TABLE: simulation_results
+-- ============================================================================
+-- Description: Simulation output snapshots associated with saved scenarios.
+-- ============================================================================
+
+CREATE TABLE simulation_results (
+    id SERIAL PRIMARY KEY,
+    scenario_id INTEGER NOT NULL REFERENCES scenarios(id) ON DELETE CASCADE,
+    baseline_score FLOAT NOT NULL,
+    compromised_score FLOAT NOT NULL,
+    affected_components JSONB DEFAULT '[]'::jsonb,
+    attack_path JSONB DEFAULT '[]'::jsonb,
+    explanation TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for simulation_results
+CREATE INDEX idx_simulation_results_scenario_id ON simulation_results(scenario_id);
+CREATE INDEX idx_simulation_results_created_at ON simulation_results(created_at DESC);
+CREATE INDEX idx_simulation_results_affected_components ON simulation_results USING GIN (affected_components);
+CREATE INDEX idx_simulation_results_attack_path ON simulation_results USING GIN (attack_path);
 
 
 -- ============================================================================

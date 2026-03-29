@@ -1,1 +1,8 @@
-from app.models.architecture import Architecture, Base, Component, Flow  # noqa: F401
+from app.models.architecture import (  # noqa: F401
+    Architecture,
+    Base,
+    Component,
+    Flow,
+    Scenario,
+    SimulationResult,
+)
