@@ -177,6 +177,21 @@ class ScenarioCreate(BaseModel):
     )
 
 
+class ScenarioSaveRequest(BaseModel):
+
+    scenario_type: str = Field(..., description="Scenario type (e.g. node_compromise)")
+    target_component_id: int = Field(..., description="Target component DB id")
+    parameters: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Scenario configuration parameters",
+    )
+    results: list["SimulationResultCreate"] = Field(
+        ...,
+        min_length=1,
+        description="One or more simulation results stored with this scenario",
+    )
+
+
 class ScenarioResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
@@ -218,6 +233,19 @@ class SimulationResultResponse(BaseModel):
     created_at: datetime
 
 
+class ScenarioWithResultsResponse(BaseModel):
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    architecture_id: int
+    scenario_type: str
+    target_component_id: int
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime
+    results: list[SimulationResultResponse] = Field(default_factory=list)
+
+
 # Re-export simulation schemas from app.core.schemas for backwards compatibility
 # Tests and routers may import these from app.models.schemas
 from app.core.schemas import (  # noqa: E402
@@ -244,9 +272,11 @@ __all__ = [
     "ArchitectureResponse",
     "ArchitectureSummaryResponse",
     "ScenarioCreate",
+    "ScenarioSaveRequest",
     "ScenarioResponse",
     "SimulationResultCreate",
     "SimulationResultResponse",
+    "ScenarioWithResultsResponse",
     # Simulation schemas (re-exported from app.core.schemas)
     "ArchitectureSchema",
     "ComponentSchema",

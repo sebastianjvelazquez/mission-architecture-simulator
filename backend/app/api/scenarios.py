@@ -6,13 +6,14 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.database import get_db
 from app.models.architecture import Architecture, Component, Scenario, SimulationResult
 from app.models.schemas import (
-    ScenarioCreate,
     ScenarioResponse,
+    ScenarioSaveRequest,
+    ScenarioWithResultsResponse,
     SimulationResultCreate,
     SimulationResultResponse,
 )
@@ -20,6 +21,7 @@ from app.models.schemas import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/architectures", tags=["scenarios"])
+results_router = APIRouter(prefix="/scenarios", tags=["simulation-results"])
 
 
 def _integrity_error_detail(exc: IntegrityError) -> str:
@@ -35,15 +37,15 @@ def _integrity_error_detail(exc: IntegrityError) -> str:
 
 @router.post(
     "/{architecture_id}/scenarios",
-    response_model=ScenarioResponse,
+    response_model=ScenarioWithResultsResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Save a scenario for replay",
+    summary="Save a scenario and its simulation results",
 )
 def create_scenario(
     architecture_id: int,
-    payload: ScenarioCreate,
+    payload: ScenarioSaveRequest,
     db: Session = Depends(get_db),
-) -> ScenarioResponse:
+) -> ScenarioWithResultsResponse:
     architecture = db.query(Architecture).filter(Architecture.id == architecture_id).first()
     if architecture is None:
         raise HTTPException(
@@ -76,9 +78,27 @@ def create_scenario(
             parameters=payload.parameters or {},
         )
         db.add(scenario)
+        db.flush()
+
+        for result_payload in payload.results:
+            result = SimulationResult(
+                scenario_id=scenario.id,
+                baseline_score=result_payload.baseline_score,
+                compromised_score=result_payload.compromised_score,
+                affected_components=result_payload.affected_components,
+                attack_path=result_payload.attack_path,
+                explanation=result_payload.explanation,
+            )
+            db.add(result)
+
         db.commit()
-        db.refresh(scenario)
-        return ScenarioResponse.model_validate(scenario)
+        saved = (
+            db.query(Scenario)
+            .options(selectinload(Scenario.results))
+            .filter(Scenario.id == scenario.id)
+            .first()
+        )
+        return ScenarioWithResultsResponse.model_validate(saved)
     except IntegrityError as exc:
         db.rollback()
         raise HTTPException(
@@ -130,30 +150,20 @@ def list_scenarios(
         ) from exc
 
 
-@router.delete(
-    "/{architecture_id}/scenarios/{scenario_id}",
+@results_router.delete(
+    "/{scenario_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a saved scenario",
 )
 def delete_scenario(
-    architecture_id: int,
     scenario_id: int,
     db: Session = Depends(get_db),
 ) -> None:
-    scenario = (
-        db.query(Scenario)
-        .filter(
-            Scenario.id == scenario_id,
-            Scenario.architecture_id == architecture_id,
-        )
-        .first()
-    )
+    scenario = db.query(Scenario).filter(Scenario.id == scenario_id).first()
     if scenario is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=(
-                f"Scenario with id {scenario_id} not found for " f"architecture {architecture_id}."
-            ),
+            detail=f"Scenario with id {scenario_id} not found.",
         )
 
     try:
@@ -169,7 +179,96 @@ def delete_scenario(
         ) from exc
 
 
-results_router = APIRouter(prefix="/scenarios", tags=["simulation-results"])
+@results_router.get(
+    "/{scenario_id}",
+    response_model=ScenarioWithResultsResponse,
+    summary="Get a saved scenario with full results",
+)
+def get_scenario(
+    scenario_id: int,
+    db: Session = Depends(get_db),
+) -> ScenarioWithResultsResponse:
+    try:
+        scenario = (
+            db.query(Scenario)
+            .options(selectinload(Scenario.results))
+            .filter(Scenario.id == scenario_id)
+            .first()
+        )
+    except SQLAlchemyError as exc:
+        logger.error("Database error getting scenario %d: %s", scenario_id, exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve scenario. Database error.",
+        ) from exc
+
+    if scenario is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Scenario with id {scenario_id} not found.",
+        )
+
+    return ScenarioWithResultsResponse.model_validate(scenario)
+
+
+@results_router.post(
+    "/{scenario_id}/clone",
+    response_model=ScenarioWithResultsResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Clone a scenario and its results",
+)
+def clone_scenario(
+    scenario_id: int,
+    db: Session = Depends(get_db),
+) -> ScenarioWithResultsResponse:
+    source = (
+        db.query(Scenario)
+        .options(selectinload(Scenario.results))
+        .filter(Scenario.id == scenario_id)
+        .first()
+    )
+    if source is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Scenario with id {scenario_id} not found.",
+        )
+
+    try:
+        clone = Scenario(
+            architecture_id=source.architecture_id,
+            scenario_type=source.scenario_type,
+            target_component_id=source.target_component_id,
+            parameters=source.parameters or {},
+        )
+        db.add(clone)
+        db.flush()
+
+        for src_result in source.results:
+            cloned_result = SimulationResult(
+                scenario_id=clone.id,
+                baseline_score=src_result.baseline_score,
+                compromised_score=src_result.compromised_score,
+                affected_components=src_result.affected_components or [],
+                attack_path=src_result.attack_path or [],
+                explanation=src_result.explanation,
+            )
+            db.add(cloned_result)
+
+        db.commit()
+        cloned = (
+            db.query(Scenario)
+            .options(selectinload(Scenario.results))
+            .filter(Scenario.id == clone.id)
+            .first()
+        )
+        return ScenarioWithResultsResponse.model_validate(cloned)
+    except SQLAlchemyError as exc:
+        db.rollback()
+        logger.error("Database error cloning scenario %d: %s", scenario_id, exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to clone scenario. Database error.",
+        ) from exc
 
 
 @results_router.post(

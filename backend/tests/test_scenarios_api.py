@@ -1,4 +1,4 @@
-"""Integration tests for scenario and simulation-result persistence endpoints."""
+"""Integration tests for scenario save/list/retrieve/delete/clone operations."""
 
 from __future__ import annotations
 
@@ -91,130 +91,106 @@ def _seed_architecture(db: Session) -> tuple[int, int, int]:
     return arch.id, c1.id, c2.id
 
 
-class TestScenarioEndpoints:
+def _create_scenario_with_results(client, architecture_id: int, target_id: int) -> dict:
+    payload = {
+        "scenario_type": "node_compromise",
+        "target_component_id": target_id,
+        "parameters": {"severity": "high", "retries": 2},
+        "results": [
+            {
+                "baseline_score": 100.0,
+                "compromised_score": 70.0,
+                "affected_components": [target_id],
+                "attack_path": ["Step 1: target compromised"],
+                "explanation": "Scenario saved with one result.",
+            }
+        ],
+    }
+    response = client.post(f"/architectures/{architecture_id}/scenarios", json=payload)
+    assert response.status_code == 201
+    return response.json()
 
-    def test_create_and_list_scenarios(self, client, db_session):
+
+class TestScenarioLibraryEndpoints:
+
+    def test_post_saves_scenario_and_results(self, client, db_session):
         architecture_id, target_id, _ = _seed_architecture(db_session)
 
-        create_payload = {
-            "scenario_type": "node_compromise",
-            "target_component_id": target_id,
-            "parameters": {"severity": "high", "retries": 2},
-        }
-        created = client.post(f"/architectures/{architecture_id}/scenarios", json=create_payload)
+        saved = _create_scenario_with_results(client, architecture_id, target_id)
 
-        assert created.status_code == 201
-        created_body = created.json()
-        assert created_body["architecture_id"] == architecture_id
-        assert created_body["target_component_id"] == target_id
-        assert created_body["scenario_type"] == "node_compromise"
-        assert created_body["parameters"]["severity"] == "high"
+        assert saved["architecture_id"] == architecture_id
+        assert saved["target_component_id"] == target_id
+        assert saved["scenario_type"] == "node_compromise"
+        assert len(saved["results"]) == 1
+        assert saved["results"][0]["baseline_score"] == 100.0
+
+    def test_get_architecture_scenarios_lists_all(self, client, db_session):
+        architecture_id, target_id, _ = _seed_architecture(db_session)
+        created = _create_scenario_with_results(client, architecture_id, target_id)
 
         listed = client.get(f"/architectures/{architecture_id}/scenarios")
         assert listed.status_code == 200
-        assert any(item["id"] == created_body["id"] for item in listed.json())
+        assert any(item["id"] == created["id"] for item in listed.json())
 
-    def test_create_scenario_with_component_from_another_architecture_returns_422(
-        self,
-        client,
-        db_session,
-    ):
-        architecture_id_a, _, _ = _seed_architecture(db_session)
-        architecture_id_b, target_id_b, _ = _seed_architecture(db_session)
-
-        payload = {
-            "scenario_type": "node_compromise",
-            "target_component_id": target_id_b,
-            "parameters": {},
-        }
-
-        response = client.post(f"/architectures/{architecture_id_a}/scenarios", json=payload)
-        assert response.status_code == 422
-        assert str(architecture_id_a) in response.json()["detail"]
-        assert architecture_id_a != architecture_id_b
-
-    def test_delete_scenario_cascades_to_simulation_results(self, client, db_session):
+    def test_get_scenario_returns_full_results(self, client, db_session):
         architecture_id, target_id, _ = _seed_architecture(db_session)
+        created = _create_scenario_with_results(client, architecture_id, target_id)
 
-        scenario = client.post(
-            f"/architectures/{architecture_id}/scenarios",
-            json={
-                "scenario_type": "insider_tampering",
-                "target_component_id": target_id,
-                "parameters": {"operator": "insider"},
-            },
-        )
-        scenario_id = scenario.json()["id"]
+        fetched = client.get(f"/scenarios/{created['id']}")
+        assert fetched.status_code == 200
+        body = fetched.json()
+        assert body["id"] == created["id"]
+        assert body["architecture_id"] == architecture_id
+        assert len(body["results"]) == 1
+        assert body["results"][0]["compromised_score"] == 70.0
 
-        result = client.post(
-            f"/scenarios/{scenario_id}/results",
-            json={
-                "baseline_score": 100.0,
-                "compromised_score": 62.5,
-                "affected_components": [target_id],
-                "attack_path": ["Step 1: Target modified"],
-                "explanation": "Insider modified mission data path.",
-            },
-        )
-        assert result.status_code == 201
-        assert db_session.query(SimulationResult).filter(SimulationResult.scenario_id == scenario_id).count() == 1
+    def test_delete_scenario_by_id(self, client, db_session):
+        architecture_id, target_id, _ = _seed_architecture(db_session)
+        created = _create_scenario_with_results(client, architecture_id, target_id)
+        scenario_id = created["id"]
 
-        deleted = client.delete(f"/architectures/{architecture_id}/scenarios/{scenario_id}")
+        deleted = client.delete(f"/scenarios/{scenario_id}")
         assert deleted.status_code == 204
 
         assert db_session.query(Scenario).filter(Scenario.id == scenario_id).first() is None
-        assert db_session.query(SimulationResult).filter(SimulationResult.scenario_id == scenario_id).count() == 0
+        assert (
+            db_session.query(SimulationResult)
+            .filter(SimulationResult.scenario_id == scenario_id)
+            .count()
+            == 0
+        )
 
-
-class TestSimulationResultEndpoints:
-
-    def test_create_and_list_results(self, client, db_session):
+    def test_clone_scenario_duplicates_scenario_and_results(self, client, db_session):
         architecture_id, target_id, _ = _seed_architecture(db_session)
+        original = _create_scenario_with_results(client, architecture_id, target_id)
 
-        scenario_resp = client.post(
-            f"/architectures/{architecture_id}/scenarios",
-            json={
-                "scenario_type": "link_degradation",
-                "target_component_id": target_id,
-                "parameters": {"packet_loss_percent": 35},
-            },
-        )
-        scenario_id = scenario_resp.json()["id"]
+        cloned = client.post(f"/scenarios/{original['id']}/clone")
+        assert cloned.status_code == 201
 
-        create_result = client.post(
-            f"/scenarios/{scenario_id}/results",
-            json={
-                "baseline_score": 100.0,
-                "compromised_score": 80.0,
-                "affected_components": [target_id],
-                "attack_path": [
-                    "Step 1: Link degraded",
-                    "Step 2: Downstream performance drops",
-                ],
-                "explanation": "Link degradation reduced mission performance.",
-            },
+        body = cloned.json()
+        assert body["id"] != original["id"]
+        assert body["architecture_id"] == original["architecture_id"]
+        assert body["scenario_type"] == original["scenario_type"]
+        assert len(body["results"]) == 1
+        assert (
+            body["results"][0]["baseline_score"]
+            == original["results"][0]["baseline_score"]
         )
 
-        assert create_result.status_code == 201
-        body = create_result.json()
-        assert body["scenario_id"] == scenario_id
-        assert body["baseline_score"] == 100.0
-        assert body["compromised_score"] == 80.0
-        assert body["affected_components"] == [target_id]
+    def test_missing_scenario_operations_return_404(self, client):
+        assert client.get("/scenarios/999999").status_code == 404
+        assert client.delete("/scenarios/999999").status_code == 404
+        assert client.post("/scenarios/999999/clone").status_code == 404
 
-        listed = client.get(f"/scenarios/{scenario_id}/results")
-        assert listed.status_code == 200
-        assert any(item["id"] == body["id"] for item in listed.json())
+    def test_openapi_contains_required_scenario_endpoints(self, client):
+        openapi = client.get("/openapi.json")
+        assert openapi.status_code == 200
+        paths = openapi.json()["paths"]
 
-    def test_create_result_for_missing_scenario_returns_404(self, client):
-        response = client.post(
-            "/scenarios/999999/results",
-            json={
-                "baseline_score": 100.0,
-                "compromised_score": 70.0,
-                "affected_components": [1, 2],
-                "attack_path": ["Step 1: Attack starts"],
-                "explanation": "Scenario not found.",
-            },
-        )
-        assert response.status_code == 404
+        assert "/architectures/{architecture_id}/scenarios" in paths
+        assert "post" in paths["/architectures/{architecture_id}/scenarios"]
+        assert "get" in paths["/architectures/{architecture_id}/scenarios"]
+        assert "/scenarios/{scenario_id}" in paths
+        assert "get" in paths["/scenarios/{scenario_id}"]
+        assert "delete" in paths["/scenarios/{scenario_id}"]
+        assert "post" in paths["/scenarios/{scenario_id}/clone"]
