@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useRef, useState } from "react";
+import Image from "next/image";
 import ReactFlow, {
   Background,
   Controls,
@@ -20,8 +21,6 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import Navbar from "@/components/NavbarEditor";
-import { nodeServerAppPaths } from "next/dist/build/webpack/plugins/pages-manifest-plugin";
-import { on } from "events";
 
 // ALL CUSTOM NODES
 function SensorNode({ data }: { data: { label: string } }) {
@@ -31,7 +30,7 @@ function SensorNode({ data }: { data: { label: string } }) {
         padding: "10px 20px",
         borderRadius: "100px",
         background: "rgba(0, 0, 0, 0.5)",
-        border: "1px solid white",
+        border: "1px solid #ED1C23",
       }}
     >
       {/* Top Handle */}
@@ -58,7 +57,7 @@ function ComputeNode({ data }: { data: { label: string } }) {
         padding: "10px 20px",
         borderRadius: "100px",
         background: "rgba(0, 0, 0, 0.5)",
-        border: "1px solid white",
+        border: "1px solid #4DA3FF",
       }}
     >
       {/* Top Handle */}
@@ -85,7 +84,7 @@ function CommsLinkNode({ data }: { data: { label: string } }) {
         padding: "10px 20px",
         borderRadius: "100px",
         background: "rgba(0, 0, 0, 0.5)",
-        border: "1px solid white",
+        border: "1px solid #34D399",
       }}
     >
       {/* Top Handle */}
@@ -112,7 +111,7 @@ function ControlNode({ data }: { data: { label: string } }) {
         padding: "10px 20px",
         borderRadius: "100px",
         background: "rgba(0, 0, 0, 0.5)",
-        border: "1px solid white",
+        border: "1px solid #F59E0B",
       }}
     >
       {/* Top Handle */}
@@ -139,7 +138,7 @@ function StorageNode({ data }: { data: { label: string } }) {
         padding: "10px 20px",
         borderRadius: "100px",
         background: "rgba(0, 0, 0, 0.5)",
-        border: "1px solid white",
+        border: "1px solid #A78BFA",
       }}
     >
       {/* Top Handle */}
@@ -166,7 +165,7 @@ function ExternalNode({ data }: { data: { label: string } }) {
         padding: "10px 20px",
         borderRadius: "100px",
         background: "rgba(0, 0, 0, 0.5)",
-        border: "1px solid white",
+        border: "1px solid #F472B6",
       }}
     >
       {/* Top Handle */}
@@ -196,6 +195,16 @@ const nodeTypes = {
   Storage: StorageNode,
   External: ExternalNode,
 };
+
+// SIDEBAR COLORS USE FOR OUTLINE
+const sidebarComponents = [
+  { type: "Sensor", color: "#ED1C23"},
+  { type: "Compute", color: "#4DA3FF"},
+  { type: "CommsLink", color: "#34D399"},
+  { type: "Control", color: "#F59E0B"},
+  { type: "Storage", color: "#A78BFA"},
+  { type: "External", color: "#F472B6"},
+];
 
 // NODE EDIT MODAL COMPONENT
 interface NodeModalProps {
@@ -351,28 +360,36 @@ function NodeEditModal({ isOpen, nodeType, currentName, currentCriticality, onCl
   );
 }
 
-// EDGE EDIT MODAL COMPONENT
 interface EdgeModalProps {
   isOpen: boolean;
   currentLabel: string;
+  currentDataTypeEdge: string;
+  currentCiaRequirement: string;
+  currentLatencySensitivity: string;
   onClose: () => void;
-  onSave: (label: string) => void;
+  onSave: (label: string, dataTypeEdge: string, ciaRequirement: string, latencySensitivity: string) => void;
 }
 
 
 // CONNECTION/EDGE EDIT MODAL FUNCTION
-function EdgeEditModal({ isOpen, currentLabel, onClose, onSave }: EdgeModalProps) {
+function EdgeEditModal({ isOpen, currentLabel, currentDataTypeEdge, currentCiaRequirement, currentLatencySensitivity, onClose, onSave }: EdgeModalProps) {
   const [label, setLabel] = useState(currentLabel);
+  const [dataTypeEdge, setDataTypeEdge] = useState(currentDataTypeEdge);
+  const [ciaRequirement, setCiaRequirement] = useState(currentCiaRequirement);
+  const [latencySensitivity, setLatencySensitivity] = useState(currentLatencySensitivity);
 
   // UPDATE LABEL STATE WHEN MODAL OPENS WITH NEW EDGE DATA
   React.useEffect(() => {
     if (isOpen) {
       setLabel(currentLabel);
+      setDataTypeEdge(currentDataTypeEdge);
+      setCiaRequirement(currentCiaRequirement);
+      setLatencySensitivity(currentLatencySensitivity);
     }
-  }, [isOpen, currentLabel]);
+  }, [isOpen, currentLabel, currentDataTypeEdge, currentCiaRequirement, currentLatencySensitivity]);
 
   const handleSave = () => {
-    onSave(label);
+    onSave(label, dataTypeEdge, ciaRequirement, latencySensitivity);
     onClose();
   };
 
@@ -400,13 +417,83 @@ function EdgeEditModal({ isOpen, currentLabel, onClose, onSave }: EdgeModalProps
       }}>
         <h3 style={{ marginTop: 0 }}>Edge Properties</h3>
         <br></br>
+        
         <label style={{ display: "block", marginBottom: "15px" }}>
           <span>Label:</span>
           <input
             type="text"
             value={label ?? ""}
-            onChange={(e) => setLabel(e.target.value)}
+            onChange={(e) => setLabel(e.target.value) }
             placeholder="Enter edge label"
+            style={{
+              width: "100%",
+              padding: "8px",
+              marginTop: "5px",
+              backgroundColor: "#2A2A2A",
+              color: "white",
+              border: "1px solid #444",
+              borderRadius: "4px",
+              boxSizing: "border-box",
+            }}
+          />
+        </label>
+
+        <br></br>
+
+        <label style={{ display: "block", marginBottom: "15px" }}>
+          <span>Data Type:</span>
+          <input
+            type="text"
+            value={dataTypeEdge ?? ""}
+            onChange={(e) => setDataTypeEdge(e.target.value)}
+            placeholder="Enter data type"
+            style={{
+              width: "100%",
+              padding: "8px",
+              marginTop: "5px",
+              backgroundColor: "#2A2A2A",
+              color: "white",
+              border: "1px solid #444",
+              borderRadius: "4px",
+              boxSizing: "border-box",
+            }}
+          />
+        </label>
+
+        <br></br>
+
+        <label style={{ display: "block", marginBottom: "15px" }}>
+          <span>CIA Requirement:</span>
+          <select
+            value={ciaRequirement ?? ""}
+            onChange={(e) => setCiaRequirement(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "8px",
+              marginTop: "5px",
+              backgroundColor: "#2A2A2A",
+              color: "white",
+              border: "1px solid #444",
+              borderRadius: "4px",
+              boxSizing: "border-box",
+            }}
+          >
+            <option value="">Select CIA Requirement</option>
+            <option value="Confidentiality">Confidentiality</option>
+            <option value="Integrity">Integrity</option>
+            <option value="Availability">Availability</option>
+          </select>
+        </label>
+
+        <br></br>
+
+        <label style={{ display: "block", marginBottom: "15px" }}>
+          <span>Latency Sensitivity:</span>
+          <input
+            type="text"
+            value={latencySensitivity ?? ""}
+            onChange={(e) => setLatencySensitivity(e.target.value)}
+            placeholder="Enter latency sensitivity"
             style={{
               width: "100%",
               padding: "8px",
@@ -475,6 +562,7 @@ export default function Home() {
   // CONNECTIONS BETWEEN NODES (ARROWS)
   const onConnect = useCallback(
     (connection: Connection) => {
+      rawLabel: "";
       const sourceNode = nodes.find((n) => n.id === connection.source);
       const targetNode = nodes.find((n) => n.id === connection.target);
 
@@ -494,6 +582,10 @@ export default function Home() {
         data: {
           sourceNodeType: sourceNode?.type,
           targetNodeType: targetNode?.type,
+          dataTypeEdge: "",
+          rawLabel: "",
+          ciaRequirement: "",
+          latencySensitivity: "",
         }
       }, eds));
     },
@@ -507,10 +599,13 @@ export default function Home() {
   }, []);
 
   // HANDLE EDGE SAVE FROM MODAL
-  const handleEdgeSave = useCallback((label: string) => {
+  const handleEdgeSave = useCallback((label: string, dataTypeEdge: string, ciaRequirement: string, latencySensitivity: string) => {
+    const rawLabel = label.trim();
+    const cia = ciaRequirement.trim();
+    const displayLabel = [rawLabel, cia].filter(Boolean).join(" - ");
     setEdges((eds) =>
       eds.map((e) =>
-        e.id === selectedEdge?.id ? { ...e, label } : e
+        e.id === selectedEdge?.id ? { ...e, label: displayLabel, data: { ...e.data, dataTypeEdge, ciaRequirement, latencySensitivity, rawLabel } } : e
       )
     );
     setIsEdgeModalOpen(false);
@@ -594,7 +689,12 @@ export default function Home() {
         backgroundRepeat: 'no-repeat',
         backgroundSize: 'cover',
        }}>
-      <Navbar />
+      <Navbar 
+        nodes={nodes}
+        edges={edges}
+        setNodes={setNodes}
+        setEdges={setEdges}
+      />
 
       {/* SIDEBAR */}
       <div style={{ display: "flex", flex: 1, gap: "14px", padding: "14px", overflow: "hidden"}}>
@@ -642,8 +742,8 @@ export default function Home() {
               color: "#808088",
               lineHeight: "1.5",
             }}>
-              <div style={{ marginBottom: "6px" }}>• Drag to canvas</div>
-              <div style={{ marginBottom: "6px" }}>• Double-click to edit</div>
+              <div style={{ marginBottom: "6px" }}>• Drag and drop components onto canvas</div>
+              <div style={{ marginBottom: "6px" }}>• Double-click to edit nodes/edges</div>
               <div>• Connect nodes to link</div>
             </div>
           </div>
@@ -664,12 +764,12 @@ export default function Home() {
                 gap: "8px",
               }}
             >
-              {["Sensor", "Compute", "CommsLink", "Control", "Storage", "External"].map((type) => (
-                <li key={type}>
+              {sidebarComponents.map((component) => (
+                <li key={component.type}>
                   <button
                     type="button"
                     draggable
-                    onDragStart={(event) => onDragStart(event, type)}
+                    onDragStart={(event) => onDragStart(event, component.type)}
                     style={{
                       width: "100%",
                       padding: "12px 14px",
@@ -692,7 +792,19 @@ export default function Home() {
                       e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
                     }}
                   >
-                    {type}
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span
+                        style={{
+                          width: "8px",
+                          height: "8px",
+                          borderRadius: "999px",
+                          backgroundColor: component.color,
+                          boxShadow: `0 0 8px ${component.color}`,
+                          flexShrink: 0,
+                        }}
+                      />
+                      <span>{component.type}</span>
+                    </div>
                   </button>
                 </li>
               ))}
@@ -782,7 +894,10 @@ export default function Home() {
       {/* EDGE EDIT MODAL */}
       <EdgeEditModal
         isOpen={isEdgeModalOpen}
-        currentLabel={selectedEdge?.label?.toString() || ""}
+        currentLabel={selectedEdge?.data?.rawLabel || ""}
+        currentDataTypeEdge={selectedEdge?.data?.dataTypeEdge || ""}
+        currentCiaRequirement={selectedEdge?.data?.ciaRequirement || ""}
+        currentLatencySensitivity={selectedEdge?.data?.latencySensitivity || ""}
         onClose={() => setIsEdgeModalOpen(false)}
         onSave={handleEdgeSave}
       />

@@ -5,6 +5,7 @@ import Navbar from "@/components/NavbarDashboard";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // SAMPLE DATA, REPLACE WITH REAL DATA FROM DB WHEN INTEGRATED
+
 const baselineData = [
   { name: 'A', value: 4 },
   { name: 'B', value: 6 },

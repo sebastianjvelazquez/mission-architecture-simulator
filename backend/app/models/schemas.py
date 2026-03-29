@@ -167,6 +167,85 @@ class ArchitectureSummaryResponse(BaseModel):
     updated_at: datetime
 
 
+class ScenarioCreate(BaseModel):
+
+    scenario_type: str = Field(..., description="Scenario type (e.g. node_compromise)")
+    target_component_id: int = Field(..., description="Target component DB id")
+    parameters: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Scenario configuration parameters",
+    )
+
+
+class ScenarioSaveRequest(BaseModel):
+
+    scenario_type: str = Field(..., description="Scenario type (e.g. node_compromise)")
+    target_component_id: int = Field(..., description="Target component DB id")
+    parameters: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Scenario configuration parameters",
+    )
+    results: list["SimulationResultCreate"] = Field(
+        ...,
+        min_length=1,
+        description="One or more simulation results stored with this scenario",
+    )
+
+
+class ScenarioResponse(BaseModel):
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    architecture_id: int
+    scenario_type: str
+    target_component_id: int
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime
+
+
+class SimulationResultCreate(BaseModel):
+
+    baseline_score: float = Field(..., description="Mission score before attack")
+    compromised_score: float = Field(..., description="Mission score after attack")
+    affected_components: list[int] = Field(
+        default_factory=list,
+        description="Array of affected component DB ids",
+    )
+    attack_path: list[str] = Field(
+        default_factory=list,
+        description="Step-by-step propagation path",
+    )
+    explanation: Optional[str] = Field(None, description="Human-readable summary")
+
+
+class SimulationResultResponse(BaseModel):
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    scenario_id: int
+    baseline_score: float
+    compromised_score: float
+    affected_components: list[int] = Field(default_factory=list)
+    attack_path: list[str] = Field(default_factory=list)
+    explanation: Optional[str] = None
+    created_at: datetime
+
+
+class ScenarioWithResultsResponse(BaseModel):
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    architecture_id: int
+    scenario_type: str
+    target_component_id: int
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime
+    results: list[SimulationResultResponse] = Field(default_factory=list)
+
+
 # Re-export simulation schemas from app.core.schemas for backwards compatibility
 # Tests and routers may import these from app.models.schemas
 from app.core.schemas import (  # noqa: E402
@@ -192,6 +271,12 @@ __all__ = [
     "ArchitectureUpdate",
     "ArchitectureResponse",
     "ArchitectureSummaryResponse",
+    "ScenarioCreate",
+    "ScenarioSaveRequest",
+    "ScenarioResponse",
+    "SimulationResultCreate",
+    "SimulationResultResponse",
+    "ScenarioWithResultsResponse",
     # Simulation schemas (re-exported from app.core.schemas)
     "ArchitectureSchema",
     "ComponentSchema",
