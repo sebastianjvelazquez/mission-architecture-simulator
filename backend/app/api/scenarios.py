@@ -304,9 +304,7 @@ def export_scenario_results(
         return StreamingResponse(
             io.BytesIO(content.encode("utf-8")),
             media_type="application/json",
-            headers={
-                "Content-Disposition": f"attachment; filename=scenario_{scenario_id}.json"
-            },
+            headers={"Content-Disposition": f"attachment; filename=scenario_{scenario_id}.json"},
         )
 
     output = io.StringIO()
