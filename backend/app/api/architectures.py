@@ -1,4 +1,4 @@
-"""CRUD endpoints for architectures: POST, GET list, GET by id."""
+"""CRUD endpoints for architectures: POST, PUT, GET list, GET by id."""
 
 import logging
 
@@ -141,6 +141,127 @@ def create_architecture(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to save architecture. Database error.",
+        ) from exc
+
+
+@router.put(
+    "/{architecture_id}",
+    response_model=ArchitectureResponse,
+    summary="Update an architecture with full component/flow replacement",
+    description=(
+        "Replaces an existing architecture using a full replace strategy: "
+        "old components/flows are deleted and recreated from the request payload."
+    ),
+)
+def update_architecture(
+    architecture_id: int,
+    payload: ArchitectureCreate,
+    db: Session = Depends(get_db),
+) -> ArchitectureResponse:
+    arch = (
+        db.query(Architecture)
+        .options(*_ARCH_LOAD_OPTIONS)
+        .filter(Architecture.id == architecture_id)
+        .first()
+    )
+    if arch is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Architecture with id {architecture_id} not found.",
+        )
+
+    component_ids = [c.component_id for c in payload.components]
+    if len(component_ids) != len(set(component_ids)):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Duplicate component_id values in request.",
+        )
+
+    component_id_set = set(component_ids)
+    for flow in payload.flows:
+        if flow.source_component_id not in component_id_set:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=(
+                    f"Flow source_component_id '{flow.source_component_id}'"
+                    " not found in components."
+                ),
+            )
+        if flow.target_component_id not in component_id_set:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=(
+                    f"Flow target_component_id '{flow.target_component_id}'"
+                    " not found in components."
+                ),
+            )
+
+    try:
+        arch.name = payload.name
+        arch.description = payload.description
+        arch.properties = payload.properties or {}
+
+        # Full replace strategy: remove existing child records and rebuild.
+        # Deleting ORM instances avoids identity-map collisions when reusing ids.
+        for flow in list(arch.flows):
+            db.delete(flow)
+        for component in list(arch.components):
+            db.delete(component)
+        db.flush()
+
+        slug_to_db_id: dict[str, int] = {}
+        for c in payload.components:
+            component = Component(
+                architecture_id=architecture_id,
+                component_id=c.component_id,
+                name=c.name,
+                component_type=c.component_type,
+                criticality=c.criticality,
+                position_x=c.position_x,
+                position_y=c.position_y,
+                properties=c.properties or {},
+            )
+            db.add(component)
+            db.flush()
+            slug_to_db_id[c.component_id] = component.id
+
+        for f in payload.flows:
+            flow = Flow(
+                architecture_id=architecture_id,
+                source_component_id=slug_to_db_id[f.source_component_id],
+                target_component_id=slug_to_db_id[f.target_component_id],
+                data_type=f.data_type,
+                cia_requirement=f.cia_requirement,
+                latency_sensitivity=f.latency_sensitivity,
+                properties=f.properties or {},
+            )
+            db.add(flow)
+
+        db.commit()
+
+        refreshed = (
+            db.query(Architecture)
+            .options(*_ARCH_LOAD_OPTIONS)
+            .filter(Architecture.id == architecture_id)
+            .first()
+        )
+        logger.info("Architecture updated: id=%d name='%s'", architecture_id, payload.name)
+        return ArchitectureResponse.model_validate(refreshed)
+
+    except IntegrityError as exc:
+        db.rollback()
+        detail = _integrity_error_detail(exc)
+        logger.warning("Constraint violation updating architecture %d: %s", architecture_id, exc.orig)
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=detail,
+        ) from exc
+    except SQLAlchemyError as exc:
+        db.rollback()
+        logger.error("Database error updating architecture %d: %s", architecture_id, exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update architecture. Database error.",
         ) from exc
 
 
