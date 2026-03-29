@@ -1,9 +1,9 @@
 # Database Design Documentation
 
-**Schema Version:** 1.1.0 (Increment 1)
+**Schema Version:** 1.2.0 (Increment 2)
 **PostgreSQL Version:** 15+
 **ORM:** SQLAlchemy 2.0 (DeclarativeBase)
-**Last Updated:** February 22, 2026
+**Last Updated:** March 28, 2026
 **Database Lead:** Person 3
 
 ---
@@ -27,13 +27,19 @@
 
 ## Overview
 
-Three tables store all persistent state for the Mission System Security Architecture Simulator.
+Five tables store all persistent state for the Mission System Security Architecture Simulator.
 
 | Table | Purpose |
 |---|---|
 | `architectures` | Top-level mission system containers |
 | `components` | Nodes in an architecture graph |
 | `flows` | Directed edges between components |
+| `scenarios` | Saved simulation scenario inputs per architecture |
+| `simulation_results` | Persisted simulation outputs per scenario |
+
+Increment 2 adds robust persistence and validation for scenario workflows.
+All new CRUD operations use endpoint-level database exception handling with
+rollback on write failures and meaningful 409/500 responses.
 
 Tables are created automatically at startup via `Base.metadata.create_all()` in `backend/app/database.py`. No manual SQL is required for a fresh deployment.
 
@@ -271,6 +277,12 @@ All indexes are B-tree, declared in `__table_args__` on each ORM model and creat
 | `ix_flows_architecture_id` | `flows` | `architecture_id` | Load all flows for an architecture |
 | `ix_flows_source_component_id` | `flows` | `source_component_id` | Graph traversal: outgoing edges from a node |
 | `ix_flows_target_component_id` | `flows` | `target_component_id` | Graph traversal: incoming edges to a node |
+| `ix_scenarios_architecture_id` | `scenarios` | `architecture_id` | List scenarios for an architecture |
+| `ix_scenarios_scenario_type` | `scenarios` | `scenario_type` | Filter/query scenarios by type |
+| `ix_scenarios_target_component_id` | `scenarios` | `target_component_id` | Lookup scenarios by target component |
+| `ix_scenarios_created_at` | `scenarios` | `created_at` | Newest-first scenario retrieval |
+| `ix_simulation_results_scenario_id` | `simulation_results` | `scenario_id` | Load all results for a scenario |
+| `ix_simulation_results_created_at` | `simulation_results` | `created_at` | Newest-first result retrieval |
 
 ---
 
@@ -284,8 +296,11 @@ All indexes are B-tree, declared in `__table_args__` on each ORM model and creat
 | `components.criticality` between 1 and 10 | Pydantic `Field(ge=1, le=10)` on `ComponentCreate` |
 | `component_id` slugs must be unique within a POST request | Python check in `create_architecture()` before any DB write |
 | Flow source/target must reference components in the same request | Python check before any DB write |
+| Scenario type must be one of supported values before insert | API validation in scenarios endpoint |
+| Scenario parameters are validated by scenario type before insert | API validation in scenarios endpoint |
 | Deleting an architecture removes all its children | `ON DELETE CASCADE` on `components.architecture_id` and `flows.architecture_id` |
 | Deleting a component removes its flows | `ON DELETE CASCADE` on `flows.source_component_id` and `flows.target_component_id` |
+| Deleting a scenario removes persisted simulation results | `ON DELETE CASCADE` on `simulation_results.scenario_id` |
 | No orphaned components or flows | Cascade + `passive_deletes=True` on all ORM relationships |
 
 ### Error Handling
@@ -297,6 +312,10 @@ All indexes are B-tree, declared in `__table_args__` on each ORM model and creat
 | `IntegrityError` (FK violation) | 409 Conflict | Referenced row does not exist |
 | `SQLAlchemyError` (generic) | 500 Internal Server Error | Connection dropped, timeout, unexpected DB error |
 | Rollback | triggered on all of the above | Session is always rolled back before the HTTP response is sent |
+
+The same exception strategy is applied across new Increment 2 endpoints in
+architectures and scenarios routers, including create, update, delete, and list
+paths that touch persisted scenario data.
 
 All database operations are wrapped in `try / except IntegrityError / except SQLAlchemyError` blocks. A global `@app.exception_handler(SQLAlchemyError)` in `main.py` acts as a safety net for any error that escapes endpoint-level handling.
 

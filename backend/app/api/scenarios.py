@@ -26,9 +26,17 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/architectures", tags=["scenarios"])
 
+_ALLOWED_SCENARIO_TYPES = {
+    "node_compromise",
+    "link_degradation",
+    "insider_tampering",
+}
+
 
 def _integrity_error_detail(exc: IntegrityError) -> str:
     msg = str(exc.orig).lower() if exc.orig else str(exc).lower()
+    if "unique" in msg or "duplicate" in msg:
+        return "A record with these values already exists (unique constraint violation)."
     if "foreign key" in msg or "foreignkey" in msg:
         return "Referenced record does not exist (foreign key constraint violation)."
     if "not null" in msg or "null value" in msg or "notnull" in msg:
@@ -36,6 +44,66 @@ def _integrity_error_detail(exc: IntegrityError) -> str:
     if "check" in msg:
         return "A field value is out of the allowed range (check constraint violation)."
     return "Database constraint violation."
+
+
+def _validate_scenario_payload(payload: ScenarioCreate) -> tuple[str, dict]:
+    scenario_type = payload.scenario_type.strip().lower()
+    if scenario_type not in _ALLOWED_SCENARIO_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=(
+                "Unsupported scenario_type. " f"Allowed values: {sorted(_ALLOWED_SCENARIO_TYPES)}"
+            ),
+        )
+
+    parameters = payload.parameters or {}
+    if not isinstance(parameters, dict):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="parameters must be a JSON object.",
+        )
+
+    for key in parameters:
+        if not isinstance(key, str) or not key.strip():
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="All parameter keys must be non-empty strings.",
+            )
+
+    if scenario_type == "node_compromise":
+        severity = parameters.get("severity")
+        if severity is not None and severity not in {"low", "medium", "high"}:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="For node_compromise, severity must be low, medium, or high.",
+            )
+
+        retries = parameters.get("retries")
+        if retries is not None and (not isinstance(retries, int) or retries < 0 or retries > 10):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="For node_compromise, retries must be an integer from 0 to 10.",
+            )
+
+    if scenario_type == "link_degradation":
+        packet_loss = parameters.get("packet_loss_percent")
+        if packet_loss is not None and (
+            not isinstance(packet_loss, (int, float)) or packet_loss < 0 or packet_loss > 100
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="For link_degradation, packet_loss_percent must be between 0 and 100.",
+            )
+
+    if scenario_type == "insider_tampering":
+        operator = parameters.get("operator")
+        if operator is not None and (not isinstance(operator, str) or not operator.strip()):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="For insider_tampering, operator must be a non-empty string.",
+            )
+
+    return scenario_type, parameters
 
 
 @router.post(
@@ -49,36 +117,49 @@ def create_scenario(
     payload: ScenarioCreate,
     db: Session = Depends(get_db),
 ) -> ScenarioResponse:
-    architecture = db.query(Architecture).filter(Architecture.id == architecture_id).first()
-    if architecture is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Architecture with id {architecture_id} not found.",
-        )
+    scenario_type, validated_parameters = _validate_scenario_payload(payload)
 
-    target = (
-        db.query(Component)
-        .filter(
-            Component.id == payload.target_component_id,
-            Component.architecture_id == architecture_id,
+    try:
+        architecture = db.query(Architecture).filter(Architecture.id == architecture_id).first()
+        if architecture is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Architecture with id {architecture_id} not found.",
+            )
+
+        target = (
+            db.query(Component)
+            .filter(
+                Component.id == payload.target_component_id,
+                Component.architecture_id == architecture_id,
+            )
+            .first()
         )
-        .first()
-    )
-    if target is None:
+        if target is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=(
+                    f"target_component_id {payload.target_component_id} does not belong "
+                    f"to architecture {architecture_id}."
+                ),
+            )
+    except SQLAlchemyError as exc:
+        logger.error(
+            "Database error validating scenario create request for architecture %d: %s",
+            architecture_id,
+            exc,
+        )
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=(
-                f"target_component_id {payload.target_component_id} does not belong "
-                f"to architecture {architecture_id}."
-            ),
-        )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to validate scenario request. Database error.",
+        ) from exc
 
     try:
         scenario = Scenario(
             architecture_id=architecture_id,
-            scenario_type=payload.scenario_type,
+            scenario_type=scenario_type,
             target_component_id=payload.target_component_id,
-            parameters=payload.parameters or {},
+            parameters=validated_parameters,
         )
         db.add(scenario)
         db.commit()
@@ -108,14 +189,14 @@ def list_scenarios(
     architecture_id: int,
     db: Session = Depends(get_db),
 ) -> list[ScenarioResponse]:
-    architecture = db.query(Architecture).filter(Architecture.id == architecture_id).first()
-    if architecture is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Architecture with id {architecture_id} not found.",
-        )
-
     try:
+        architecture = db.query(Architecture).filter(Architecture.id == architecture_id).first()
+        if architecture is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Architecture with id {architecture_id} not found.",
+            )
+
         rows = (
             db.query(Scenario)
             .filter(Scenario.architecture_id == architecture_id)
@@ -145,23 +226,24 @@ def delete_scenario(
     scenario_id: int,
     db: Session = Depends(get_db),
 ) -> None:
-    scenario = (
-        db.query(Scenario)
-        .filter(
-            Scenario.id == scenario_id,
-            Scenario.architecture_id == architecture_id,
-        )
-        .first()
-    )
-    if scenario is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=(
-                f"Scenario with id {scenario_id} not found for " f"architecture {architecture_id}."
-            ),
-        )
-
     try:
+        scenario = (
+            db.query(Scenario)
+            .filter(
+                Scenario.id == scenario_id,
+                Scenario.architecture_id == architecture_id,
+            )
+            .first()
+        )
+        if scenario is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=(
+                    f"Scenario with id {scenario_id} not found for "
+                    f"architecture {architecture_id}."
+                ),
+            )
+
         db.delete(scenario)
         db.commit()
         return None
@@ -188,12 +270,23 @@ def create_simulation_result(
     payload: SimulationResultCreate,
     db: Session = Depends(get_db),
 ) -> SimulationResultResponse:
-    scenario = db.query(Scenario).filter(Scenario.id == scenario_id).first()
-    if scenario is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Scenario with id {scenario_id} not found.",
+    try:
+        scenario = db.query(Scenario).filter(Scenario.id == scenario_id).first()
+        if scenario is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Scenario with id {scenario_id} not found.",
+            )
+    except SQLAlchemyError as exc:
+        logger.error(
+            "Database error validating result create for scenario %d: %s",
+            scenario_id,
+            exc,
         )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to validate simulation result request. Database error.",
+        ) from exc
 
     try:
         result = SimulationResult(
@@ -232,14 +325,14 @@ def list_simulation_results(
     scenario_id: int,
     db: Session = Depends(get_db),
 ) -> list[SimulationResultResponse]:
-    scenario = db.query(Scenario).filter(Scenario.id == scenario_id).first()
-    if scenario is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Scenario with id {scenario_id} not found.",
-        )
-
     try:
+        scenario = db.query(Scenario).filter(Scenario.id == scenario_id).first()
+        if scenario is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Scenario with id {scenario_id} not found.",
+            )
+
         rows = (
             db.query(SimulationResult)
             .filter(SimulationResult.scenario_id == scenario_id)
@@ -267,17 +360,24 @@ def export_scenario_results(
     ),
     db: Session = Depends(get_db),
 ) -> StreamingResponse:
-    scenario = (
-        db.query(Scenario)
-        .options(selectinload(Scenario.results))
-        .filter(Scenario.id == scenario_id)
-        .first()
-    )
-    if scenario is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Scenario with id {scenario_id} not found.",
+    try:
+        scenario = (
+            db.query(Scenario)
+            .options(selectinload(Scenario.results))
+            .filter(Scenario.id == scenario_id)
+            .first()
         )
+        if scenario is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Scenario with id {scenario_id} not found.",
+            )
+    except SQLAlchemyError as exc:
+        logger.error("Database error loading export for scenario %d: %s", scenario_id, exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to export scenario results. Database error.",
+        ) from exc
 
     if format == "json":
         payload = {
