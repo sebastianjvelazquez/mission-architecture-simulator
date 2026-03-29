@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import csv
+import io
+import json
 from typing import Generator
 
 import pytest
@@ -157,13 +160,23 @@ class TestScenarioEndpoints:
             },
         )
         assert result.status_code == 201
-        assert db_session.query(SimulationResult).filter(SimulationResult.scenario_id == scenario_id).count() == 1
+        assert (
+            db_session.query(SimulationResult)
+            .filter(SimulationResult.scenario_id == scenario_id)
+            .count()
+            == 1
+        )
 
         deleted = client.delete(f"/architectures/{architecture_id}/scenarios/{scenario_id}")
         assert deleted.status_code == 204
 
         assert db_session.query(Scenario).filter(Scenario.id == scenario_id).first() is None
-        assert db_session.query(SimulationResult).filter(SimulationResult.scenario_id == scenario_id).count() == 0
+        assert (
+            db_session.query(SimulationResult)
+            .filter(SimulationResult.scenario_id == scenario_id)
+            .count()
+            == 0
+        )
 
 
 class TestSimulationResultEndpoints:
@@ -218,3 +231,62 @@ class TestSimulationResultEndpoints:
             },
         )
         assert response.status_code == 404
+
+
+class TestScenarioExportEndpoints:
+
+    def _seed_scenario_with_result(self, client, db_session) -> int:
+        architecture_id, target_id, _ = _seed_architecture(db_session)
+        scenario_resp = client.post(
+            f"/architectures/{architecture_id}/scenarios",
+            json={
+                "scenario_type": "node_compromise",
+                "target_component_id": target_id,
+                "parameters": {"severity": "high"},
+            },
+        )
+        assert scenario_resp.status_code == 201
+        scenario_id = scenario_resp.json()["id"]
+
+        result_resp = client.post(
+            f"/scenarios/{scenario_id}/results",
+            json={
+                "baseline_score": 100.0,
+                "compromised_score": 75.0,
+                "affected_components": [target_id],
+                "attack_path": ["Step 1: target compromised"],
+                "explanation": "Export test result.",
+            },
+        )
+        assert result_resp.status_code == 201
+        return scenario_id
+
+    def test_export_json_download_contains_full_scenario_and_results(self, client, db_session):
+        scenario_id = self._seed_scenario_with_result(client, db_session)
+
+        response = client.get(f"/scenarios/{scenario_id}/export?format=json")
+        assert response.status_code == 200
+        assert "application/json" in response.headers["content-type"]
+        assert "attachment; filename=scenario_" in response.headers["content-disposition"]
+
+        payload = json.loads(response.text)
+        assert payload["id"] == scenario_id
+        assert payload["scenario_type"] == "node_compromise"
+        assert "parameters" in payload
+        assert len(payload["results"]) == 1
+        assert payload["results"][0]["baseline_score"] == 100.0
+
+    def test_export_csv_download_contains_flat_rows_with_scores(self, client, db_session):
+        scenario_id = self._seed_scenario_with_result(client, db_session)
+
+        response = client.get(f"/scenarios/{scenario_id}/export?format=csv")
+        assert response.status_code == 200
+        assert "text/csv" in response.headers["content-type"]
+        assert "attachment; filename=scenario_" in response.headers["content-disposition"]
+
+        reader = csv.DictReader(io.StringIO(response.text))
+        rows = list(reader)
+        assert len(rows) >= 1
+        assert rows[0]["scenario_id"] == str(scenario_id)
+        assert rows[0]["baseline_score"] == "100.0"
+        assert rows[0]["compromised_score"] == "75.0"
