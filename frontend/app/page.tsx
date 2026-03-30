@@ -684,7 +684,7 @@ export default function Home() {
         display: "flex",
         flexDirection: "column",
         height: "100vh",
-        backgroundImage: 'url(/BluePurp.jpeg)',
+        backgroundColor: 'rgba(15, 15, 18, 1)',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
         backgroundSize: 'cover',

@@ -72,25 +72,6 @@ export default function Navbar() {
             gap: "0px",
           }}>
             <li>
-              <button 
-                id="load-button"
-                onClick={() => setShowLoadModal(true)}
-                style={{
-                  padding: "10px 16px",
-                  backgroundColor: "transparent",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px", 
-                }}
-              >
-                <h3 style={{margin: "0", fontSize: "16px"}}>Load</h3>
-              </button>
-            </li>
-            <li>
               <button
                 id="dashboard-button"
                 style={{
