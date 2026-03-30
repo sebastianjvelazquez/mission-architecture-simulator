@@ -1,12 +1,104 @@
 "use client";
 
-import React from "react";
+import React, {useState, useEffect} from "react";
 import Navbar from "@/components/NavbarDashboard";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-// SAMPLE DATA, REPLACE WITH REAL DATA FROM DB WHEN INTEGRATED
+// SAMPLE DATA, REPLACE WITH REAL DATA
+// DB IS NOW WORKING, NEED TO GRAB FROM BACKEND AND FORMAT PROPERLY FOR CHARTS AND TABLES
+// OVERHAUL OF DASHBOARD ESSENTIALLY
+
+/*
+FROM SIMULATOR.PY, THIS IS WHAT WE WILL BE BUILDING THE CHARTS BASED ON
+def _build_explanation(
+        self,
+        scenario_type: str,
+        target_id: str,
+        affected_ids: set[str],
+        baseline_score: float,
+        compromised_score: float,
+    ) -> str:
+*/
+
+/* WHAT WE NEED:
+SCENARIO TYPE
+TARGET ID
+AFFECTED IDS
+BASELINE SCORE
+COMPROMISED SCORE
+*/
+
+/*
+WE NEED RUN BUTTON AND SCENARIO COMPARISON
+Ideas: for scenario comparison, i was thinking have first scenario take up full page, then i can have a "test another scenario" button that opens
+a side by side view with the other scenario, and then a "return to single scenario view" button that goes back to the original view. 
+this way we can have a nice clean UI for both single and comparison modes without needing to cram everything into one page
+
+"compare" button next to run button on dashboard, when clicked it opens a modal with a dropdown of other scenarios to compare against, 
+once user selects scenario and clicks "compare" it runs the second scenario and then opens the side by side view with both scenarios' results.
+
+For the run and compare buttons i was thinking two green buttons top right but not inside the navbar just above charts and data
+
+kind of like how inside github on an issue you see the edit and new issue buttons in the top right above the content
+
+Make both green? Or maybe run is green and compare is yellow? Not sure on the colors but i think run should be green
+
+Problems: Will we need to re-run the simulator for the second scenario? If so, how do we handle that? 
+Do we want to have a loading state while the second scenario is being processed? Do we just put a run different scenario button
+next to the run button on dashboard? Would make it a little better looking. 
+
+Need to figure out how to handle the state for the two scenarios and the loading state for when we are running the second scenario.
+*/
+
+/* RUN BUTTON CRITERIA: 
+Requirements:
+[-] "Run Simulation" button added to editor toolbar/navbar
+[-] Modal or panel to select: scenario type (node_compromise, link_degradation, insider_tampering), target component
+[-] Target component selectable from dropdown of current architecture components
+[-] Sends POST request to /architectures/{id}/simulate with scenario_type and target_component_id
+[-] Navigates to dashboard page with simulation results upon success
+[-] Error handling for unsaved architectures (prompt to save first)
+[-] Loading state during simulation
+
+Technical Notes:
+Architecture must be saved before simulating (need architecture ID)
+Pass simulation results via URL params, context, or state management
+File: frontend/components/NavbarEditor.tsx, new component for simulation modal
+*/
+
+/* LIVE RESULTS CRITERIA:
+[-] Dashboard receives real simulation results (not hardcoded data)
+[-] Bar chart shows baseline vs. compromised mission scores (Recharts)
+[-] Table lists all affected components with name, type, criticality
+[-] Unaffected components listed separately
+[-] Mission score percentage prominently displayed with color coding (green >80%, yellow 50-80%, red <50%)
+[-] Attack path narrative/explanation displayed
+[-] Criticality ranking table shown
+[-] Responsive design
+
+Technical Notes:
+Currently dashboard/page.tsx has hardcoded sample data
+Replace with data passed from simulation or fetched from API
+Use Recharts for charts, Tailwind for styling
+File: frontend/app/dashboard/page.tsx
+*/
+
+/* SCENARIO COMPARISON CRITERIA:
+[-] "Compare Scenarios" view on dashboard
+[-] Side-by-side display of two simulation results
+[-] Comparison chart showing both scores overlaid
+[-] Table highlighting differences in affected components
+[-] User can select which two scenarios to compare
+[-] Clear labeling of scenario A vs. scenario B
+
+Technical Notes:
+Requires scenario storage (see Issue [TASK] Frontend Polish & Accessibility (Inc 2) #48)
+Could use a split-panel layout or tabbed comparison
+File: frontend/app/dashboard/page.tsx or new comparison page
+*/
 
 const baselineData = [
+  // USE GET FOR REAL DATA
   { name: 'A', value: 4 },
   { name: 'B', value: 6 },
   { name: 'C', value: 8 },
@@ -14,6 +106,7 @@ const baselineData = [
 ];
 
 const compromisedData = [
+  // USE GET FOR REAL DATA
   { name: 'A', value: 5 },
   { name: 'B', value: 8 },
   { name: 'C', value: 6 },
@@ -21,6 +114,7 @@ const compromisedData = [
 ];
 
 const scoreImpactData = [
+  // USE GET FOR REAL DATA
   { time: 0, score: 100 },
   { time: 1, score: 100 },
   { time: 2, score: 95 },
