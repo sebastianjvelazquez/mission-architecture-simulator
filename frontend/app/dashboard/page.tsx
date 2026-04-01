@@ -4,46 +4,13 @@ import React, { useEffect, useMemo, useState } from "react";
 import Navbar, { SimulationResult } from "@/components/NavbarDashboard";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-/* RUN BUTTON CRITERIA: 
-Requirements:
-[x] "Run Simulation" button added to editor toolbar/navbar (added to body instead)
-[x] Modal or panel to select: scenario type (node_compromise, link_degradation, insider_tampering), target component
-[x] Target component selectable from dropdown of current architecture components
-[x] Sends POST request to /architectures/{id}/simulate with scenario_type and target_component_id
-[x] Navigates to dashboard page with simulation results upon success
-[0] Error handling for unsaved architectures (prompt to save first)
-[x] Loading state during simulation
-
-Technical Notes:
-Architecture must be saved before simulating (need architecture ID)
-Pass simulation results via URL params, context, or state management
-File: frontend/components/NavbarEditor.tsx, new component for simulation modal
-*/
-
-/* LIVE RESULTS CRITERIA:
-[x] Dashboard receives real simulation results (not hardcoded data)
-[x] Bar chart shows baseline vs. compromised mission scores (Recharts)
-[x] Table lists all affected components with name, type, criticality
-[x] Unaffected components listed separately
-[x] Mission score percentage prominently displayed with color coding (green >80%, yellow 50-80%, red <50%)
-[x] Attack path narrative/explanation displayed
-[x] Criticality ranking table shown
-[x] Responsive design
-
-Technical Notes:
-Currently dashboard/page.tsx has hardcoded sample data
-Replace with data passed from simulation or fetched from API
-Use Recharts for charts, Tailwind for styling
-File: frontend/app/dashboard/page.tsx
-*/
-
 /* SCENARIO COMPARISON CRITERIA:
-[x] "Compare Scenarios" view on dashboard
-[x] Side-by-side display of two simulation results
-[x] Comparison chart showing both scores overlaid
-[x] Table highlighting differences in affected components
-[x] User can select which two scenarios to compare
-[x] Clear labeling of scenario A vs. scenario B
+[-] "Compare Scenarios" view on dashboard
+[-] Side-by-side display of two simulation results
+[-] Comparison chart showing both scores overlaid
+[-] Table highlighting differences in affected components
+[-] User can select which two scenarios to compare
+[-] Clear labeling of scenario A vs. scenario B
 
 Technical Notes:
 Requires scenario storage (see Issue [TASK] Frontend Polish & Accessibility (Inc 2) #48)
