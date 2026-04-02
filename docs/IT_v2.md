@@ -409,7 +409,10 @@ TOTAL                          XXX     XX  ≥70.00%
 
 ### NFR-7: CORS Middleware *(retained from v1)*
 
-**Result:** ✅ CORS headers correctly set; Vercel domain added to `ALLOWED_ORIGINS`.
+**Result:** Backend CORS middleware is implemented and working in code. For the
+live deployment, Render must include
+`ALLOWED_ORIGINS=https://mission-architecture-simulator.vercel.app,http://localhost:3000`
+so browser preflight requests from the Vercel frontend succeed.
 
 ### NFR-18: Database Query Performance
 
