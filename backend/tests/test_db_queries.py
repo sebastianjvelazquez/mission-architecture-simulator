@@ -21,16 +21,21 @@ import time
 from typing import Generator
 
 import pytest
+from app.models.architecture import (
+    Architecture,
+    Base,
+    Component,
+    Flow,
+    Scenario,
+    SimulationResult,
+)
 from sqlalchemy import create_engine, event, inspect
+from sqlalchemy.dialects.sqlite.base import SQLiteTypeCompiler
 from sqlalchemy.orm import Session, selectinload, sessionmaker
 
 # SQLite does not natively support JSONB. Teach its compiler to treat JSONB
 # identically to JSON so we can run schema-creation against in-memory SQLite.
-from sqlalchemy.dialects.sqlite.base import SQLiteTypeCompiler
-
 SQLiteTypeCompiler.visit_JSONB = SQLiteTypeCompiler.visit_JSON  # type: ignore[attr-defined]
-
-from app.models.architecture import Architecture, Base, Component, Flow
 
 # ---------------------------------------------------------------------------
 # Engine / session fixtures
@@ -118,6 +123,30 @@ def _flow(arch_id: int, src_id: int, tgt_id: int) -> Flow:
     )
 
 
+def _scenario(
+    arch_id: int,
+    target_component_id: int,
+    scenario_type: str = "node_compromise",
+) -> Scenario:
+    return Scenario(
+        architecture_id=arch_id,
+        scenario_type=scenario_type,
+        target_component_id=target_component_id,
+        parameters={},
+    )
+
+
+def _result(scenario_id: int, affected: list[int] | None = None) -> SimulationResult:
+    return SimulationResult(
+        scenario_id=scenario_id,
+        baseline_score=100.0,
+        compromised_score=70.0,
+        affected_components=affected or [],
+        attack_path=[],
+        explanation="load-test",
+    )
+
+
 # ---------------------------------------------------------------------------
 # Index tests
 # ---------------------------------------------------------------------------
@@ -155,6 +184,14 @@ class TestIndexes:
     def test_flows_has_target_component_id_index(self, db_engine):
         indexes = {idx["name"] for idx in inspect(db_engine).get_indexes("flows")}
         assert "ix_flows_target_component_id" in indexes
+
+    def test_scenarios_has_architecture_id_index(self, db_engine):
+        indexes = {idx["name"] for idx in inspect(db_engine).get_indexes("scenarios")}
+        assert "ix_scenarios_architecture_id" in indexes
+
+    def test_scenarios_has_scenario_type_index(self, db_engine):
+        indexes = {idx["name"] for idx in inspect(db_engine).get_indexes("scenarios")}
+        assert "ix_scenarios_scenario_type" in indexes
 
 
 # ---------------------------------------------------------------------------
@@ -246,8 +283,10 @@ class TestEagerLoading:
         #   1 - SELECT architectures WHERE id IN (...)
         #   2 - SELECT components WHERE architecture_id IN (...)       [Architecture.components]
         #   3 - SELECT flows WHERE architecture_id IN (...)            [Architecture.flows]
-        #   4 - SELECT flows WHERE source_component_id IN (...)        [Component.outgoing_flows lazy='selectin']
-        #   5 - SELECT flows WHERE target_component_id IN (...)        [Component.incoming_flows lazy='selectin']
+        #   4 - SELECT flows WHERE source_component_id IN (...)
+        #       [Component.outgoing_flows lazy='selectin']
+        #   5 - SELECT flows WHERE target_component_id IN (...)
+        #       [Component.incoming_flows lazy='selectin']
         # Total = 5, constant regardless of N. That is the proof there is no N+1.
         assert counter.count == 5
         assert all(len(r.components) == 2 for r in rows)
@@ -303,6 +342,88 @@ class TestBulkInsert:
             Architecture.name.like("ListArch-%")
         ).all()
         assert len(all_rows) >= 10
+
+
+class TestScenarioLoad:
+
+    def test_load_seed_50_architectures_and_100_scenarios(self, db):
+        start = time.perf_counter()
+        arch_ids: list[int] = []
+        component_ids: list[int] = []
+
+        for i in range(50):
+            arch = _arch(f"LoadArch-{i}")
+            db.add(arch)
+            db.flush()
+            arch_ids.append(arch.id)
+
+            comp = _component(arch.id, f"load-c{i}")
+            db.add(comp)
+            db.flush()
+            component_ids.append(comp.id)
+
+        scenario_ids: list[int] = []
+        for i in range(100):
+            arch_id = arch_ids[i % len(arch_ids)]
+            comp_id = component_ids[i % len(component_ids)]
+            scenario = _scenario(arch_id, comp_id)
+            db.add(scenario)
+            db.flush()
+            scenario_ids.append(scenario.id)
+
+            db.add(_result(scenario.id, [comp_id]))
+
+        db.commit()
+        elapsed_ms = (time.perf_counter() - start) * 1000
+
+        assert (
+            db.query(Architecture)
+            .filter(Architecture.name.like("LoadArch-%"))
+            .count()
+            >= 50
+        )
+        assert db.query(Scenario).filter(Scenario.id.in_(scenario_ids)).count() == 100
+        assert (
+            db.query(SimulationResult)
+            .filter(SimulationResult.scenario_id.in_(scenario_ids))
+            .count()
+            == 100
+        )
+        assert elapsed_ms < 10000
+
+    def test_no_n_plus_one_loading_scenarios_with_results(self, db, db_engine):
+        scenario_ids: list[int] = []
+
+        for i in range(20):
+            arch = _arch(f"N1-Scenario-{i}")
+            db.add(arch)
+            db.flush()
+
+            comp = _component(arch.id, f"n1-s-c{i}")
+            db.add(comp)
+            db.flush()
+
+            scenario = _scenario(arch.id, comp.id)
+            db.add(scenario)
+            db.flush()
+            scenario_ids.append(scenario.id)
+
+            db.add(_result(scenario.id, [comp.id]))
+
+        db.commit()
+        db.expire_all()
+
+        with QueryCounter(db_engine) as counter:
+            rows = (
+                db.query(Scenario)
+                .options(selectinload(Scenario.results))
+                .filter(Scenario.id.in_(scenario_ids))
+                .all()
+            )
+
+        # Constant query pattern: 1 for scenarios + 1 for results.
+        assert counter.count == 2
+        assert all(len(row.results) == 1 for row in rows)
 
 
 # ---------------------------------------------------------------------------
@@ -469,14 +590,19 @@ class TestConnectionPool:
         # NullPool / StaticPool used in tests won't have these attrs,
         # but the production engine created from database.py will.
         if hasattr(pool, "size"):
-            assert pool.size() == 5
+            assert pool.size() == 10
 
     def test_max_overflow_is_configured(self):
         from app.database import engine
         pool = engine.pool
         if hasattr(pool, "_max_overflow"):
-            assert pool._max_overflow == 10
+            assert pool._max_overflow == 20
 
     def test_pool_pre_ping_is_enabled(self):
         from app.database import engine
         assert engine.pool._pre_ping is True
+
+    def test_slow_query_threshold_is_100_ms(self):
+        from app.database import _SLOW_QUERY_THRESHOLD_MS
+
+        assert _SLOW_QUERY_THRESHOLD_MS == 100
