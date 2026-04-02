@@ -67,17 +67,17 @@
 - ✅ Backend test coverage: ≥94.81% (exceeds 70% target)
 - ✅ CI pipeline updated: `--cov-fail-under=70` enforced
 - ✅ Integration tests run in CI on Increment2 branch pushes
-- ✅ Frontend deployed to Vercel
-- ✅ Backend deployed to Render
+- ✅ Frontend deployed to Vercel at `https://mission-architecture-simulator.vercel.app`
+- ✅ Backend deployed to Render at `https://mission-architecture-simulator.onrender.com`
 - ✅ PostgreSQL database provisioned on Render (free tier)
-- ✅ CORS updated to allow Vercel production domain
+- ⚠ Final Render `ALLOWED_ORIGINS` update is still needed to allow browser requests from the Vercel production domain
 - ✅ `docs/RD_v2.md` completed
 - ✅ `docs/IT_v2.md` completed
 - ✅ `docs/SETUP.md` updated with deployment instructions
 
 ### Overall Project Status
 
-The project is **on track** for the Increment 2 deadline. All planned features have been implemented. The frontend is fully integrated with the backend API. Two new simulation scenarios (link degradation, insider tampering) are functional and tested. The application is publicly accessible via Vercel (frontend) and Render (backend).
+The project is **on track** for the Increment 2 deadline. The frontend and backend are deployed publicly, and the remaining production task is updating Render `ALLOWED_ORIGINS` so browser API requests from the Vercel frontend succeed consistently. The Increment 2 demo video is also still pending upload.
 
 **Comparison to Increment 2 Scope:**
 - Frontend-backend integration: 100% complete
@@ -247,6 +247,8 @@ Florida State University - CEN 4090L
 **Demo Video:** [Increment 2 Demo - Mission Architecture Simulator](#)
 
 *Update this link once the video is uploaded to YouTube.*
+
+*Recording script:* `VIDEO_SCRIPT.md`
 
 *The video demonstrates:*
 1. Saving an architecture from the frontend canvas to the database
