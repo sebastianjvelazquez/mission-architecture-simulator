@@ -87,6 +87,19 @@ cd frontend
 npm test
 ```
 
+## Current Live Deployment
+
+- Frontend: `https://mission-architecture-simulator.vercel.app`
+- Backend API: `https://mission-architecture-simulator.onrender.com`
+- API Docs: `https://mission-architecture-simulator.onrender.com/docs`
+
+If browser requests from the live frontend fail, update the Render backend
+environment variable below and redeploy the backend:
+
+```bash
+ALLOWED_ORIGINS=https://mission-architecture-simulator.vercel.app,http://localhost:3000
+```
+
 ## Production Deployment
 
 ### Backend on Render
@@ -135,11 +148,15 @@ This creates the ORM-managed tables before the service starts.
    - `ENVIRONMENT=production`
    - `ALLOWED_ORIGINS=http://localhost:3000`
 6. Deploy the service.
-7. Open the Render shell for the service and initialize the database:
+7. Initialize the database before serving traffic. If your Render plan includes
+   shell access or one-off jobs, run:
 
 ```bash
 python -c "from app.database import init_db; init_db()"
 ```
+
+   If your plan does not include shell access, add the same command to a
+   pre-deploy hook or run it from your startup command before `uvicorn`.
 
 8. Verify:
    - `https://<your-render-service>.onrender.com/health`
@@ -164,7 +181,7 @@ NEXT_PUBLIC_API_URL=https://<your-render-service>.onrender.com
 7. Go back to Render and update `ALLOWED_ORIGINS` to include both origins:
 
 ```bash
-https://<your-vercel-project>.vercel.app,http://localhost:3000
+https://mission-architecture-simulator.vercel.app,http://localhost:3000
 ```
 
 8. Redeploy the backend if Render does not do so automatically after the env
