@@ -6,6 +6,10 @@ import {Inter } from 'next/font/google';
 import Link from "next/dist/client/link";
 
 const inter = Inter({ weight: "500", subsets: ['latin'] });
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(
+  /\/$/,
+  "",
+);
 
 type ArchitectureSummary = {
   id: number;
@@ -72,7 +76,7 @@ export default function Navbar({ onSimulationCompleted }: NavbarProps) {
     setIsFetchingArchitectures(true);
 
     try {
-      const response = await fetch("http://localhost:8000/architectures");
+      const response = await fetch(`${API_BASE_URL}/architectures`);
       if (!response.ok) {
         throw new Error("Failed to fetch saved architectures.");
       }
@@ -104,7 +108,7 @@ export default function Navbar({ onSimulationCompleted }: NavbarProps) {
       setIsFetchingComponents(true);
 
       try {
-        const response = await fetch(`http://localhost:8000/architectures/${selectedArchitectureId}`);
+        const response = await fetch(`${API_BASE_URL}/architectures/${selectedArchitectureId}`);
         if (!response.ok) {
           throw new Error("Failed to fetch selected architecture details.");
         }
@@ -153,7 +157,7 @@ export default function Navbar({ onSimulationCompleted }: NavbarProps) {
       }).toString();
 
       const response = await fetch(
-        `http://localhost:8000/architectures/${selectedArchitectureId}/simulate?${query}`,
+        `${API_BASE_URL}/architectures/${selectedArchitectureId}/simulate?${query}`,
         { method: "POST" }
       );
 
