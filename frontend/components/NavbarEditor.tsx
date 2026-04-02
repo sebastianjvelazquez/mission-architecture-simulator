@@ -7,6 +7,10 @@ import Link from "next/dist/client/link";
 import { Node, Edge, MarkerType } from "reactflow";
 
 const inter = Inter({ weight: "500", subsets: ['latin'] });
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(
+  /\/$/,
+  "",
+);
 
 type ArchitectureSummary = {
   id: number;
@@ -83,7 +87,7 @@ export default function Navbar({ nodes, edges, setNodes, setEdges}: {
 
     // INTERACTING WITH BACKEND
     try {
-      const response = await fetch('http://localhost:8000/architectures', {
+      const response = await fetch(`${API_BASE_URL}/architectures`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -114,7 +118,7 @@ export default function Navbar({ nodes, edges, setNodes, setEdges}: {
     setIsLoading(true);
 
     try{
-      const response = await fetch('http://localhost:8000/architectures');
+      const response = await fetch(`${API_BASE_URL}/architectures`);
       if (!response.ok) {
         throw new Error('Failed to fetch architecture list');
       }
@@ -139,7 +143,9 @@ export default function Navbar({ nodes, edges, setNodes, setEdges}: {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:8000/architectures/${selectedArchitectureId}`);
+      const response = await fetch(
+        `${API_BASE_URL}/architectures/${selectedArchitectureId}`
+      );
       if (!response.ok) {
         throw new Error('Failed to fetch selected architecture');
       }

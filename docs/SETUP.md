@@ -87,6 +87,102 @@ cd frontend
 npm test
 ```
 
+## Production Deployment
+
+### Backend on Render
+
+Use the root-level `render.yaml` file if you want Render to create the backend
+service and PostgreSQL database from this repo automatically.
+
+#### Option A: Blueprint Deploy from `render.yaml`
+
+1. Push the repo to GitHub with `render.yaml` included.
+2. In Render, choose **New +** → **Blueprint**.
+3. Select this repository.
+4. Render will detect:
+   - a PostgreSQL database named `mission-architecture-simulator-db`
+   - a web service named `mission-architecture-simulator-api`
+5. Confirm the setup and deploy.
+6. Wait for the backend deploy to finish.
+7. Verify:
+   - `https://<your-render-service>.onrender.com/health`
+   - `https://<your-render-service>.onrender.com/docs`
+
+The blueprint already configures:
+
+- `DATABASE_URL` from the managed Render Postgres database
+- `ENVIRONMENT=production`
+- a pre-deploy command that runs:
+
+```bash
+python -c "from app.database import init_db; init_db()"
+```
+
+This creates the ORM-managed tables before the service starts.
+
+#### Option B: Manual Render Setup
+
+1. In Render, create a new **PostgreSQL** database.
+2. Copy the **Internal Database URL**.
+3. Create a new **Web Service** from this repository.
+4. Use these settings:
+   - **Root Directory:** `backend`
+   - **Runtime:** `Python`
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+5. Add these environment variables:
+   - `DATABASE_URL=<your Render internal database URL>`
+   - `ENVIRONMENT=production`
+   - `ALLOWED_ORIGINS=http://localhost:3000`
+6. Deploy the service.
+7. Open the Render shell for the service and initialize the database:
+
+```bash
+python -c "from app.database import init_db; init_db()"
+```
+
+8. Verify:
+   - `https://<your-render-service>.onrender.com/health`
+   - `https://<your-render-service>.onrender.com/docs`
+
+### Frontend on Vercel
+
+Before deploying the frontend, deploy the backend first so you have the Render
+API URL for `NEXT_PUBLIC_API_URL`.
+
+1. In Vercel, create a new project from this repository.
+2. Set **Root Directory** to `frontend`.
+3. Keep the detected framework as **Next.js**.
+4. Add this environment variable:
+
+```bash
+NEXT_PUBLIC_API_URL=https://<your-render-service>.onrender.com
+```
+
+5. Deploy the project.
+6. Copy the Vercel URL.
+7. Go back to Render and update `ALLOWED_ORIGINS` to include both origins:
+
+```bash
+https://<your-vercel-project>.vercel.app,http://localhost:3000
+```
+
+8. Redeploy the backend if Render does not do so automatically after the env
+   var update.
+9. Verify the deployed frontend:
+   - load the Vercel site
+   - try saving an architecture
+   - try loading an architecture
+   - confirm the browser console shows no CORS errors
+
+### Official References
+
+- Vercel monorepo project setup: https://vercel.com/docs/monorepos/
+- Vercel environment variables: https://vercel.com/docs/environment-variables/manage-across-environments
+- Render docs: https://render.com/docs
+- Render Blueprints: https://render.com/docs/infrastructure-as-code
+- Render Blueprint spec: https://render.com/docs/blueprint-spec
+
 ## Troubleshooting
 
 ### Port Already in Use
