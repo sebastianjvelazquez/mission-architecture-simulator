@@ -747,9 +747,9 @@ All team members:
   - Video link
   - GitHub link
   - **🌐 LIVE DEPLOYMENT URLS:**
-    - Frontend URL: https://your-project.vercel.app
-    - Backend API URL: https://your-project.onrender.com
-    - API Docs: https://your-project.onrender.com/docs
+    - Frontend URL: https://mission-architecture-simulator.vercel.app
+    - Backend API URL: https://mission-architecture-simulator.onrender.com
+    - API Docs: https://mission-architecture-simulator.onrender.com/docs
 
 **Then (after Apr 27):**
 - [ ] **LIVE CLASS PRESENTATION (5-7 min demo)**
@@ -1892,9 +1892,9 @@ REQ-003 | Save Architecture | FEAT-003 | test_save | ✓
 **Deployment Guide (REQUIRED - CRITICAL)**
 
 - **Live Deployment URLs:**
-  - Frontend: https://your-project.vercel.app
-  - Backend API: https://your-project.onrender.com
-  - API Docs: https://your-project.onrender.com/docs
+  - Frontend: https://mission-architecture-simulator.vercel.app
+  - Backend API: https://mission-architecture-simulator.onrender.com
+  - API Docs: https://mission-architecture-simulator.onrender.com/docs
 - Complete Vercel setup instructions
 - Complete Render setup instructions
 - PostgreSQL configuration on Render
@@ -1930,7 +1930,7 @@ REQ-003 | Save Architecture | FEAT-003 | test_save | ✓
 0:00-0:30 – OPENING & SCENARIO
 "We're demonstrating how our simulator helps mission planners 
  evaluate resilience. Here's our LIVE DEPLOYED application."
-[Open browser to https://your-project.vercel.app - NOT localhost!]
+[Open browser to https://mission-architecture-simulator.vercel.app - NOT localhost!]
 [Show architecture: 3-5 key components]
 
 0:30-1:30 – BASELINE UNDER ATTACK
@@ -1980,8 +1980,8 @@ This project taught us how to think about mission assurance."
 6:30-7:00 – CLOSING
 "Full code on GitHub: [link]
  🌐 LIVE DEPLOYMENT:
-   - Frontend: https://your-project.vercel.app
-   - Backend API: https://your-project.onrender.com/docs
+   - Frontend: https://mission-architecture-simulator.vercel.app
+   - Backend API: https://mission-architecture-simulator.onrender.com/docs
  Thanks for watching."
 ```
 
@@ -2102,7 +2102,7 @@ Before deploying, ensure you have:
 4. Configure Environment Variables:
 
 ```plaintext
-NEXT_PUBLIC_API_URL=https://your-project.onrender.com
+NEXT_PUBLIC_API_URL=https://mission-architecture-simulator.onrender.com
 ```
 
 5. Click "Deploy"
@@ -2174,7 +2174,7 @@ Plan: Free
 
 ```plaintext
 DATABASE_URL=[Paste Internal Database URL from step 2.2]
-ALLOWED_ORIGINS=https://your-project.vercel.app
+ALLOWED_ORIGINS=https://mission-architecture-simulator.vercel.app,http://localhost:3000
 PYTHON_VERSION=3.11
 ```
 
@@ -2183,7 +2183,7 @@ PYTHON_VERSION=3.11
 ### 2.4 Verify Backend Deployment
 
 1. Wait for build to complete (5-10 minutes on free tier)
-2. Visit `https://your-project.onrender.com/docs`
+2. Visit `https://mission-architecture-simulator.onrender.com/docs`
 3. You should see the FastAPI Swagger documentation
 4. Test a simple endpoint (e.g., health check)
 
@@ -2197,7 +2197,7 @@ PYTHON_VERSION=3.11
 2. Update `NEXT_PUBLIC_API_URL`:
 
 ```plaintext
-NEXT_PUBLIC_API_URL=https://your-project.onrender.com
+NEXT_PUBLIC_API_URL=https://mission-architecture-simulator.onrender.com
 ```
 
 3. Click "Save"
@@ -2214,7 +2214,7 @@ NEXT_PUBLIC_API_URL=https://your-project.onrender.com
 2. Ensure `ALLOWED_ORIGINS` includes your Vercel URL:
 
 ```plaintext
-ALLOWED_ORIGINS=https://your-project.vercel.app
+ALLOWED_ORIGINS=https://mission-architecture-simulator.vercel.app,http://localhost:3000
 ```
 
 3. The service will automatically redeploy
@@ -2418,11 +2418,11 @@ Add this section to your project README:
 ```markdown
 ## 🌐 Live Deployment
 
-**Frontend (Vercel):** https://your-project.vercel.app
+**Frontend (Vercel):** https://mission-architecture-simulator.vercel.app
 
-**Backend API (Render):** https://your-project.onrender.com
+**Backend API (Render):** https://mission-architecture-simulator.onrender.com
 
-**API Documentation:** https://your-project.onrender.com/docs
+**API Documentation:** https://mission-architecture-simulator.onrender.com/docs
 
 ### Note on Cold Starts
 The backend uses Render's free tier, which may sleep after 15 minutes of inactivity.
@@ -2961,9 +2961,9 @@ Your project is graded on **THREE ABET outcomes:**
 
 ## 🌐 Deployment Links (Update After Deploy)
 
-- **Live Frontend:** https://your-project.vercel.app
-- **Live Backend API:** https://your-project.onrender.com
-- **API Documentation:** https://your-project.onrender.com/docs
+- **Live Frontend:** https://mission-architecture-simulator.vercel.app
+- **Live Backend API:** https://mission-architecture-simulator.onrender.com
+- **API Documentation:** https://mission-architecture-simulator.onrender.com/docs
 
 ## Tech Stack Quick Links
 

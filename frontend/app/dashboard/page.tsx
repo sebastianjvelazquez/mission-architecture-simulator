@@ -40,6 +40,11 @@ const scenarioLabel: Record<string, string> = {
   insider_tampering: "Insider Tampering",
 };
 
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(
+  /\/$/,
+  "",
+);
+
 const getScoreColorClasses = (score: number) => {
   if (score > 80) {
     return "border-emerald-500/40 bg-emerald-900/20 text-emerald-200";
@@ -68,7 +73,7 @@ export default function Dashboard() {
       setArchitectureLoadError(null);
 
       try {
-        const response = await fetch(`http://localhost:8000/architectures/${latestSimulation.architecture_id}`);
+        const response = await fetch(`${API_BASE_URL}/architectures/${latestSimulation.architecture_id}`);
         if (!response.ok) {
           throw new Error("Failed to fetch architecture details for component breakdown.");
         }
