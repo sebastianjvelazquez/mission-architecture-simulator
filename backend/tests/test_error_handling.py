@@ -15,7 +15,7 @@ Tests cover:
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -218,7 +218,11 @@ class TestIntegrityErrorHandling:
             app.dependency_overrides.pop(get_db, None)
 
     def test_not_null_violation_returns_409(self, client):
-        db = _mock_db(flush_exc=_make_integrity_error("null value in column violates not-null constraint"))
+        db = _mock_db(
+            flush_exc=_make_integrity_error(
+                "null value in column violates not-null constraint"
+            )
+        )
         app.dependency_overrides[get_db] = _override(db)
         try:
             r = client.post("/architectures", json=MINIMAL_PAYLOAD)
@@ -366,7 +370,10 @@ class TestNotFound:
 
     def test_list_empty_returns_200_not_404(self, client):
         db = MagicMock(spec=Session)
-        db.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = []
+        (
+            db.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all
+            .return_value
+        ) = []
         app.dependency_overrides[get_db] = _override(db)
         try:
             r = client.get("/architectures")
@@ -388,6 +395,120 @@ class TestRollbackBehaviour:
         try:
             client.post("/architectures", json=MINIMAL_PAYLOAD)
             assert db.rollback.call_count == 1
+        finally:
+            app.dependency_overrides.pop(get_db, None)
+
+
+class TestScenarioValidationAndErrors:
+
+    def test_create_scenario_rejects_unsupported_type(self, client):
+        payload = {
+            "scenario_type": "bad_type",
+            "target_component_id": 1,
+            "parameters": {},
+        }
+        r = client.post("/architectures/1/scenarios", json=payload)
+        assert r.status_code == 422
+        assert "unsupported scenario_type" in r.json()["detail"].lower()
+
+    def test_create_scenario_rejects_invalid_node_compromise_parameters(self, client):
+        payload = {
+            "scenario_type": "node_compromise",
+            "target_component_id": 1,
+            "parameters": {"severity": "extreme"},
+        }
+        r = client.post("/architectures/1/scenarios", json=payload)
+        assert r.status_code == 422
+        assert "severity" in r.json()["detail"].lower()
+
+    def test_create_scenario_rejects_invalid_link_degradation_parameters(self, client):
+        payload = {
+            "scenario_type": "link_degradation",
+            "target_component_id": 1,
+            "parameters": {"packet_loss_percent": 120},
+        }
+        r = client.post("/architectures/1/scenarios", json=payload)
+        assert r.status_code == 422
+        assert "packet_loss_percent" in r.json()["detail"].lower()
+
+    def test_create_scenario_integrity_error_returns_409_and_rolls_back(self, client):
+        db = MagicMock(spec=Session)
+        db.query.return_value.filter.return_value.first.side_effect = [
+            MagicMock(),
+            MagicMock(),
+        ]
+        db.commit.side_effect = _make_integrity_error("UNIQUE constraint failed")
+        app.dependency_overrides[get_db] = _override(db)
+        try:
+            payload = {
+                "scenario_type": "node_compromise",
+                "target_component_id": 1,
+                "parameters": {"severity": "high"},
+            }
+            r = client.post("/architectures/1/scenarios", json=payload)
+            assert r.status_code == 409
+            db.rollback.assert_called_once()
+        finally:
+            app.dependency_overrides.pop(get_db, None)
+
+    def test_create_scenario_db_error_returns_500_and_rolls_back(self, client):
+        db = MagicMock(spec=Session)
+        db.query.return_value.filter.return_value.first.side_effect = [
+            MagicMock(),
+            MagicMock(),
+        ]
+        db.commit.side_effect = _make_sqlalchemy_error()
+        app.dependency_overrides[get_db] = _override(db)
+        try:
+            payload = {
+                "scenario_type": "node_compromise",
+                "target_component_id": 1,
+                "parameters": {"severity": "high"},
+            }
+            r = client.post("/architectures/1/scenarios", json=payload)
+            assert r.status_code == 500
+            db.rollback.assert_called_once()
+        finally:
+            app.dependency_overrides.pop(get_db, None)
+
+    def test_list_scenarios_db_error_returns_500(self, client):
+        db = MagicMock(spec=Session)
+        db.query.side_effect = _make_sqlalchemy_error()
+        app.dependency_overrides[get_db] = _override(db)
+        try:
+            r = client.get("/architectures/1/scenarios")
+            assert r.status_code == 500
+        finally:
+            app.dependency_overrides.pop(get_db, None)
+
+    def test_delete_scenario_db_error_returns_500_and_rolls_back(self, client):
+        db = MagicMock(spec=Session)
+        db.query.return_value.filter.return_value.first.return_value = MagicMock()
+        db.commit.side_effect = _make_sqlalchemy_error()
+        app.dependency_overrides[get_db] = _override(db)
+        try:
+            r = client.delete("/architectures/1/scenarios/9")
+            assert r.status_code == 500
+            db.rollback.assert_called_once()
+        finally:
+            app.dependency_overrides.pop(get_db, None)
+
+    def test_create_result_integrity_error_returns_409_and_rolls_back(self, client):
+        db = MagicMock(spec=Session)
+        db.query.return_value.filter.return_value.first.return_value = MagicMock()
+        db.commit.side_effect = _make_integrity_error("FOREIGN KEY constraint failed")
+        app.dependency_overrides[get_db] = _override(db)
+        try:
+            payload = {
+                "baseline_score": 100.0,
+                "compromised_score": 90.0,
+                "affected_components": [],
+                "attack_path": [],
+                "explanation": "x",
+            }
+            r = client.post("/scenarios/1/results", json=payload)
+            assert r.status_code == 409
+            db.rollback.assert_called_once()
         finally:
             app.dependency_overrides.pop(get_db, None)
 
