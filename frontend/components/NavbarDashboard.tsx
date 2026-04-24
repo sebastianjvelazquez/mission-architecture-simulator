@@ -43,13 +43,20 @@ export type SimulationResult = {
   explanation: string;
 };
 
+export type CompareSimulationResult = {
+  architecture_id: number;
+  left: SimulationResult;
+  right: SimulationResult;
+};
+
 type NavbarProps = {
   onSimulationCompleted?: (result: SimulationResult) => void;
+  onCompareCompleted?: (result: CompareSimulationResult) => void;
 };
 
 {/* NAVBAR CODE FOR USE INSIDE PAGE.TSX */}
-export default function Navbar({ onSimulationCompleted }: NavbarProps) {
-  const [showRunModal, setShowRunModal] = useState(false);
+export default function Navbar({ onSimulationCompleted, onCompareCompleted }: NavbarProps) {
+  const [modalMode, setModalMode] = useState<"run" | "compare" | null>(null);
   const [isFetchingArchitectures, setIsFetchingArchitectures] = useState(false);
   const [isFetchingComponents, setIsFetchingComponents] = useState(false);
   const [isRunningSimulation, setIsRunningSimulation] = useState(false);
@@ -57,21 +64,56 @@ export default function Navbar({ onSimulationCompleted }: NavbarProps) {
   const [architectureList, setArchitectureList] = useState<ArchitectureSummary[]>([]);
   const [selectedArchitectureId, setSelectedArchitectureId] = useState<number | null>(null);
   const [selectedScenarioType, setSelectedScenarioType] = useState<ScenarioType>("node_compromise");
+  const [selectedCompareScenarioTypeLeft, setSelectedCompareScenarioTypeLeft] = useState<ScenarioType>("node_compromise");
+  const [selectedCompareScenarioTypeRight, setSelectedCompareScenarioTypeRight] = useState<ScenarioType>("node_compromise");
   const [componentsForSelectedArchitecture, setComponentsForSelectedArchitecture] = useState<ArchitectureDetail["components"]>([]);
   const [selectedTargetComponentId, setSelectedTargetComponentId] = useState<string>("");
+  const [selectedCompareTargetComponentIdLeft, setSelectedCompareTargetComponentIdLeft] = useState<string>("");
+  const [selectedCompareTargetComponentIdRight, setSelectedCompareTargetComponentIdRight] = useState<string>("");
 
-  useEffect(() => {
-    if (showRunModal) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
+  const isCompareMode = modalMode === "compare";
+
+  const resetSelections = () => {
+    setSelectedArchitectureId(null);
+    setComponentsForSelectedArchitecture([]);
+    setSelectedTargetComponentId("");
+    setSelectedScenarioType("node_compromise");
+    setSelectedCompareScenarioTypeLeft("node_compromise");
+    setSelectedCompareScenarioTypeRight("node_compromise");
+    setSelectedCompareTargetComponentIdLeft("");
+    setSelectedCompareTargetComponentIdRight("");
+  };
+
+  const runSimulationRequest = async (
+    architectureId: number,
+    scenarioType: ScenarioType,
+    targetComponentId: string,
+  ): Promise<SimulationResult> => {
+    const query = new URLSearchParams({
+      scenario_type: scenarioType,
+      target_component_id: targetComponentId,
+    }).toString();
+
+    const response = await fetch(
+      `${API_BASE_URL}/architectures/${architectureId}/simulate?${query}`,
+      { method: "POST" }
+    );
+
+    if (!response.ok) {
+      let detail = "Simulation failed.";
+      try {
+        const errBody = await response.json();
+        detail = errBody?.detail || detail;
+      } catch {
+        // KEEP FALLBACK WHEN RESPONSE !JSON
+      }
+      throw new Error(detail);
     }
-    return () => {
-      document.body.style.overflow = "unset";
-    };
-  }, [showRunModal]);
 
-  const handleOpenRunModal = async () => {
+    return response.json();
+  };
+
+  const handleOpenModal = async (mode: "run" | "compare") => {
     setRunError(null);
     setIsFetchingArchitectures(true);
 
@@ -83,11 +125,8 @@ export default function Navbar({ onSimulationCompleted }: NavbarProps) {
 
       const list: ArchitectureSummary[] = await response.json();
       setArchitectureList(list);
-      setSelectedArchitectureId(null);
-      setComponentsForSelectedArchitecture([]);
-      setSelectedTargetComponentId("");
-      setSelectedScenarioType("node_compromise");
-      setShowRunModal(true);
+      resetSelections();
+      setModalMode(mode);
     } catch (error) {
       console.error("Error fetching architecture list:", error);
       setRunError("Unable to load saved architectures. Please try again.");
@@ -97,10 +136,23 @@ export default function Navbar({ onSimulationCompleted }: NavbarProps) {
   };
 
   useEffect(() => {
+    if (modalMode) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [modalMode]);
+
+  useEffect(() => {
     const loadArchitectureComponents = async () => {
       if (!selectedArchitectureId) {
         setComponentsForSelectedArchitecture([]);
         setSelectedTargetComponentId("");
+        setSelectedCompareTargetComponentIdLeft("");
+        setSelectedCompareTargetComponentIdRight("");
         return;
       }
 
@@ -118,23 +170,31 @@ export default function Navbar({ onSimulationCompleted }: NavbarProps) {
 
         if (architecture.components.length > 0) {
           setSelectedTargetComponentId(architecture.components[0].component_id);
+          setSelectedCompareTargetComponentIdLeft(architecture.components[0].component_id);
+          setSelectedCompareTargetComponentIdRight(
+            architecture.components[1]?.component_id ?? architecture.components[0].component_id,
+          );
         } else {
           setSelectedTargetComponentId("");
+          setSelectedCompareTargetComponentIdLeft("");
+          setSelectedCompareTargetComponentIdRight("");
         }
       } catch (error) {
         console.error("Error fetching selected architecture details:", error);
         setRunError("Unable to load components for this architecture.");
         setComponentsForSelectedArchitecture([]);
         setSelectedTargetComponentId("");
+        setSelectedCompareTargetComponentIdLeft("");
+        setSelectedCompareTargetComponentIdRight("");
       } finally {
         setIsFetchingComponents(false);
       }
     };
 
-    if (showRunModal) {
+    if (modalMode) {
       loadArchitectureComponents();
     }
-  }, [selectedArchitectureId, showRunModal]);
+  }, [selectedArchitectureId, modalMode]);
 
   const handleRunSimulation = async () => {
     if (!selectedArchitectureId) {
@@ -151,33 +211,58 @@ export default function Navbar({ onSimulationCompleted }: NavbarProps) {
     setIsRunningSimulation(true);
 
     try {
-      const query = new URLSearchParams({
-        scenario_type: selectedScenarioType,
-        target_component_id: selectedTargetComponentId,
-      }).toString();
-
-      const response = await fetch(
-        `${API_BASE_URL}/architectures/${selectedArchitectureId}/simulate?${query}`,
-        { method: "POST" }
+      const data = await runSimulationRequest(
+        selectedArchitectureId,
+        selectedScenarioType,
+        selectedTargetComponentId,
       );
-
-      if (!response.ok) {
-        let detail = "Simulation failed.";
-        try {
-          const errBody = await response.json();
-          detail = errBody?.detail || detail;
-        } catch {
-          // KEEP FALLBACK WHEN RESPONSE !JSON
-        }
-        throw new Error(detail);
-      }
-
-      const data: SimulationResult = await response.json();
       onSimulationCompleted?.(data);
-      setShowRunModal(false);
+      setModalMode(null);
     } catch (error) {
       console.error("Error running simulation:", error);
       setRunError(error instanceof Error ? error.message : "Simulation failed. Please try again.");
+    } finally {
+      setIsRunningSimulation(false);
+    }
+  };
+
+  const handleCompareSimulation = async () => {
+    if (!selectedArchitectureId) {
+      setRunError("Please select a saved architecture.");
+      return;
+    }
+
+    if (!selectedCompareTargetComponentIdLeft || !selectedCompareTargetComponentIdRight) {
+      setRunError("Please select two target components.");
+      return;
+    }
+
+    setRunError(null);
+    setIsRunningSimulation(true);
+
+    try {
+      const [left, right] = await Promise.all([
+        runSimulationRequest(
+          selectedArchitectureId,
+          selectedCompareScenarioTypeLeft,
+          selectedCompareTargetComponentIdLeft,
+        ),
+        runSimulationRequest(
+          selectedArchitectureId,
+          selectedCompareScenarioTypeRight,
+          selectedCompareTargetComponentIdRight,
+        ),
+      ]);
+
+      onCompareCompleted?.({
+        architecture_id: selectedArchitectureId,
+        left,
+        right,
+      });
+      setModalMode(null);
+    } catch (error) {
+      console.error("Error running compare simulation:", error);
+      setRunError(error instanceof Error ? error.message : "Comparison failed. Please try again.");
     } finally {
       setIsRunningSimulation(false);
     }
@@ -246,7 +331,7 @@ export default function Navbar({ onSimulationCompleted }: NavbarProps) {
 
         <div style={{ position: "fixed", right: "24px", marginTop: "20px", display: "flex", gap: "8px" }}>
           <button
-            onClick={handleOpenRunModal}
+            onClick={() => handleOpenModal("compare")}
             disabled={isFetchingArchitectures || isRunningSimulation}
             className="inline-flex items-center gap-2 rounded-md border border-gray-700 bg-gray-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-gray-500 disabled:cursor-not-allowed disabled:bg-gray-800/70"
           >
@@ -268,7 +353,7 @@ export default function Navbar({ onSimulationCompleted }: NavbarProps) {
           </button>
 
           <button
-            onClick={handleOpenRunModal}
+            onClick={() => handleOpenModal("run")}
             disabled={isFetchingArchitectures || isRunningSimulation}
             className="inline-flex items-center gap-2 rounded-md border border-emerald-700 bg-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-emerald-800/70"
           >
@@ -292,7 +377,7 @@ export default function Navbar({ onSimulationCompleted }: NavbarProps) {
       </nav>
     </div>
 
-    {showRunModal && (
+    {modalMode && (
       <div style={{
         position: "fixed",
         top: 0,
@@ -309,11 +394,13 @@ export default function Navbar({ onSimulationCompleted }: NavbarProps) {
           backgroundColor: "#1a1a1a",
           padding: "30px",
           borderRadius: "8px",
-          minWidth: "460px",
+          minWidth: isCompareMode ? "920px" : "460px",
           color: "white",
           border: "1px solid rgba(255,255,255,0.12)",
         }}>
-          <h2 style={{ marginTop: 0, marginBottom: "18px" }}>Run Simulation</h2>
+          <h2 style={{ marginTop: 0, marginBottom: "18px" }}>
+            {isCompareMode ? "Compare Scenarios" : "Run Simulation"}
+          </h2>
 
           <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", color: "rgba(255,255,255,0.8)" }}>
             Saved Architecture
@@ -344,63 +431,189 @@ export default function Navbar({ onSimulationCompleted }: NavbarProps) {
             ))}
           </select>
 
-          <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", color: "rgba(255,255,255,0.8)" }}>
-            Scenario Type
-          </label>
-          <select
-            value={selectedScenarioType}
-            onChange={(e) => setSelectedScenarioType(e.target.value as ScenarioType)}
-            style={{
-              width: "100%",
-              padding: "10px",
-              marginBottom: "14px",
-              borderRadius: "4px",
-              border: "1px solid #333",
-              backgroundColor: "#0a0a0a",
-              color: "white",
-              fontSize: "14px",
-              boxSizing: "border-box",
-            }}
-          >
-            <option value="node_compromise">Node Compromise</option>
-            <option value="link_degradation">Link Degradation</option>
-            <option value="insider_tampering">Insider Tampering</option>
-          </select>
+          {isCompareMode ? (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
+              <div>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", color: "rgba(255,255,255,0.8)" }}>
+                  Scenario A
+                </label>
+                <select
+                  value={selectedCompareScenarioTypeLeft}
+                  onChange={(e) => setSelectedCompareScenarioTypeLeft(e.target.value as ScenarioType)}
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    marginBottom: "14px",
+                    borderRadius: "4px",
+                    border: "1px solid #333",
+                    backgroundColor: "#0a0a0a",
+                    color: "white",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <option value="node_compromise">Node Compromise</option>
+                  <option value="link_degradation">Link Degradation</option>
+                  <option value="insider_tampering">Insider Tampering</option>
+                </select>
 
-          <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", color: "rgba(255,255,255,0.8)" }}>
-            Target Component
-          </label>
-          <select
-            value={selectedTargetComponentId}
-            onChange={(e) => setSelectedTargetComponentId(e.target.value)}
-            disabled={!selectedArchitectureId || isFetchingComponents || componentsForSelectedArchitecture.length === 0}
-            style={{
-              width: "100%",
-              padding: "10px",
-              marginBottom: "10px",
-              borderRadius: "4px",
-              border: "1px solid #333",
-              backgroundColor: "#0a0a0a",
-              color: "white",
-              fontSize: "14px",
-              boxSizing: "border-box",
-            }}
-          >
-            <option value="">
-              {!selectedArchitectureId
-                ? "Select an architecture first..."
-                : isFetchingComponents
-                  ? "Loading components..."
-                  : componentsForSelectedArchitecture.length === 0
-                    ? "No components found"
-                    : "Select target component..."}
-            </option>
-            {componentsForSelectedArchitecture.map((component) => (
-              <option key={component.id} value={component.component_id}>
-                {component.name} ({component.component_type}) - Criticality {component.criticality}
-              </option>
-            ))}
-          </select>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", color: "rgba(255,255,255,0.8)" }}>
+                  Target Component A
+                </label>
+                <select
+                  value={selectedCompareTargetComponentIdLeft}
+                  onChange={(e) => setSelectedCompareTargetComponentIdLeft(e.target.value)}
+                  disabled={!selectedArchitectureId || isFetchingComponents || componentsForSelectedArchitecture.length === 0}
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    marginBottom: "10px",
+                    borderRadius: "4px",
+                    border: "1px solid #333",
+                    backgroundColor: "#0a0a0a",
+                    color: "white",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <option value="">
+                    {!selectedArchitectureId
+                      ? "Select an architecture first..."
+                      : isFetchingComponents
+                        ? "Loading components..."
+                        : componentsForSelectedArchitecture.length === 0
+                          ? "No components found"
+                          : "Select target component..."}
+                  </option>
+                  {componentsForSelectedArchitecture.map((component) => (
+                    <option key={`left-${component.id}`} value={component.component_id}>
+                      {component.name} ({component.component_type}) - Criticality {component.criticality}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", color: "rgba(255,255,255,0.8)" }}>
+                  Scenario B
+                </label>
+                <select
+                  value={selectedCompareScenarioTypeRight}
+                  onChange={(e) => setSelectedCompareScenarioTypeRight(e.target.value as ScenarioType)}
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    marginBottom: "14px",
+                    borderRadius: "4px",
+                    border: "1px solid #333",
+                    backgroundColor: "#0a0a0a",
+                    color: "white",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <option value="node_compromise">Node Compromise</option>
+                  <option value="link_degradation">Link Degradation</option>
+                  <option value="insider_tampering">Insider Tampering</option>
+                </select>
+
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", color: "rgba(255,255,255,0.8)" }}>
+                  Target Component B
+                </label>
+                <select
+                  value={selectedCompareTargetComponentIdRight}
+                  onChange={(e) => setSelectedCompareTargetComponentIdRight(e.target.value)}
+                  disabled={!selectedArchitectureId || isFetchingComponents || componentsForSelectedArchitecture.length === 0}
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    marginBottom: "10px",
+                    borderRadius: "4px",
+                    border: "1px solid #333",
+                    backgroundColor: "#0a0a0a",
+                    color: "white",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <option value="">
+                    {!selectedArchitectureId
+                      ? "Select an architecture first..."
+                      : isFetchingComponents
+                        ? "Loading components..."
+                        : componentsForSelectedArchitecture.length === 0
+                          ? "No components found"
+                          : "Select target component..."}
+                  </option>
+                  {componentsForSelectedArchitecture.map((component) => (
+                    <option key={`right-${component.id}`} value={component.component_id}>
+                      {component.name} ({component.component_type}) - Criticality {component.criticality}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          ) : (
+            <>
+              <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", color: "rgba(255,255,255,0.8)" }}>
+                Scenario Type
+              </label>
+              <select
+                value={selectedScenarioType}
+                onChange={(e) => setSelectedScenarioType(e.target.value as ScenarioType)}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  marginBottom: "14px",
+                  borderRadius: "4px",
+                  border: "1px solid #333",
+                  backgroundColor: "#0a0a0a",
+                  color: "white",
+                  fontSize: "14px",
+                  boxSizing: "border-box",
+                }}
+              >
+                <option value="node_compromise">Node Compromise</option>
+                <option value="link_degradation">Link Degradation</option>
+                <option value="insider_tampering">Insider Tampering</option>
+              </select>
+
+              <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", color: "rgba(255,255,255,0.8)" }}>
+                Target Component
+              </label>
+              <select
+                value={selectedTargetComponentId}
+                onChange={(e) => setSelectedTargetComponentId(e.target.value)}
+                disabled={!selectedArchitectureId || isFetchingComponents || componentsForSelectedArchitecture.length === 0}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  marginBottom: "10px",
+                  borderRadius: "4px",
+                  border: "1px solid #333",
+                  backgroundColor: "#0a0a0a",
+                  color: "white",
+                  fontSize: "14px",
+                  boxSizing: "border-box",
+                }}
+              >
+                <option value="">
+                  {!selectedArchitectureId
+                    ? "Select an architecture first..."
+                    : isFetchingComponents
+                      ? "Loading components..."
+                      : componentsForSelectedArchitecture.length === 0
+                        ? "No components found"
+                        : "Select target component..."}
+                </option>
+                {componentsForSelectedArchitecture.map((component) => (
+                  <option key={component.id} value={component.component_id}>
+                    {component.name} ({component.component_type}) - Criticality {component.criticality}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
 
           {runError && (
             <div style={{ marginBottom: "12px", fontSize: "13px", color: "#fca5a5" }}>
@@ -411,7 +624,7 @@ export default function Navbar({ onSimulationCompleted }: NavbarProps) {
           <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "12px" }}>
             <button
               onClick={() => {
-                setShowRunModal(false);
+                setModalMode(null);
                 setRunError(null);
               }}
               style={{
@@ -425,48 +638,94 @@ export default function Navbar({ onSimulationCompleted }: NavbarProps) {
             >
               Cancel
             </button>
-            <button
-              onClick={handleRunSimulation}
-              disabled={
-                isRunningSimulation ||
-                !selectedArchitectureId ||
-                !selectedTargetComponentId ||
-                isFetchingComponents
-              }
-              style={{
-                padding: "10px 20px",
-                backgroundColor:
-                  isRunningSimulation || !selectedArchitectureId || !selectedTargetComponentId || isFetchingComponents
-                    ? "#166534"
-                    : "#16a34a",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor:
-                  isRunningSimulation || !selectedArchitectureId || !selectedTargetComponentId || isFetchingComponents
-                    ? "not-allowed"
-                    : "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-              }}
-            >
-              {isRunningSimulation && (
-                <span
-                  aria-label="Running"
-                  style={{
-                    width: "14px",
-                    height: "14px",
-                    border: "2px solid rgba(255,255,255,0.35)",
-                    borderTop: "2px solid #ffffff",
-                    borderRadius: "50%",
-                    display: "inline-block",
-                    animation: "spin 0.8s linear infinite",
-                  }}
-                />
-              )}
-              {isRunningSimulation ? "Running..." : "Run"}
-            </button>
+            {isCompareMode ? (
+              <button
+                onClick={handleCompareSimulation}
+                disabled={
+                  isRunningSimulation ||
+                  !selectedArchitectureId ||
+                  !selectedCompareTargetComponentIdLeft ||
+                  !selectedCompareTargetComponentIdRight ||
+                  isFetchingComponents
+                }
+                style={{
+                  padding: "10px 20px",
+                  backgroundColor:
+                    isRunningSimulation || !selectedArchitectureId || !selectedCompareTargetComponentIdLeft || !selectedCompareTargetComponentIdRight || isFetchingComponents
+                      ? "#166534"
+                      : "#16a34a",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor:
+                    isRunningSimulation || !selectedArchitectureId || !selectedCompareTargetComponentIdLeft || !selectedCompareTargetComponentIdRight || isFetchingComponents
+                      ? "not-allowed"
+                      : "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                {isRunningSimulation && (
+                  <span
+                    aria-label="Running"
+                    style={{
+                      width: "14px",
+                      height: "14px",
+                      border: "2px solid rgba(255,255,255,0.35)",
+                      borderTop: "2px solid #ffffff",
+                      borderRadius: "50%",
+                      display: "inline-block",
+                      animation: "spin 0.8s linear infinite",
+                    }}
+                  />
+                )}
+                {isRunningSimulation ? "Comparing..." : "Compare"}
+              </button>
+            ) : (
+              <button
+                onClick={handleRunSimulation}
+                disabled={
+                  isRunningSimulation ||
+                  !selectedArchitectureId ||
+                  !selectedTargetComponentId ||
+                  isFetchingComponents
+                }
+                style={{
+                  padding: "10px 20px",
+                  backgroundColor:
+                    isRunningSimulation || !selectedArchitectureId || !selectedTargetComponentId || isFetchingComponents
+                      ? "#166534"
+                      : "#16a34a",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor:
+                    isRunningSimulation || !selectedArchitectureId || !selectedTargetComponentId || isFetchingComponents
+                      ? "not-allowed"
+                      : "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                {isRunningSimulation && (
+                  <span
+                    aria-label="Running"
+                    style={{
+                      width: "14px",
+                      height: "14px",
+                      border: "2px solid rgba(255,255,255,0.35)",
+                      borderTop: "2px solid #ffffff",
+                      borderRadius: "50%",
+                      display: "inline-block",
+                      animation: "spin 0.8s linear infinite",
+                    }}
+                  />
+                )}
+                {isRunningSimulation ? "Running..." : "Run"}
+              </button>
+            )}
           </div>
         </div>
       </div>
