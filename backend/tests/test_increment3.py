@@ -3,13 +3,11 @@ tests/test_increment3.py
 
 Increment 3 test suite — closes issues #90 and #92.
 
-Covers two goals:
+Covers three goals:
     1. Hit previously uncovered error-handling branches in architectures.py and
        scenarios.py to push backend coverage above 85 %.
-    2. Provide placeholder tests (marked xfail) for clone, mitigation, and
-       compare features that are implemented by Person 2 / Person 3 in Increment
-       3.  When those endpoints land, remove the xfail marks and fill in the
-       assertions.
+    2. Validate Increment 3 clone and mitigation persistence behavior.
+    3. Keep compare-feature placeholders (xfail) until compare endpoint lands.
 
 Test classes
 ------------
@@ -34,11 +32,11 @@ TestScenariosApiErrors
     Error paths in the scenarios router that are not yet exercised by
     test_scenarios_api.py.
 
-TestCloneFeaturePlaceholder
-    xfail stubs for POST /architectures/{id}/clone (Increment 3 feature).
+TestCloneFeature
+    real tests for POST /architectures/{id}/clone deep-copy behavior.
 
-TestMitigationFeaturePlaceholder
-    xfail stubs for GET /architectures/{id}/mitigations (Increment 3 feature).
+TestMitigationFeature
+    real tests for mitigation create/list/cascade behavior.
 
 TestCompareFeaturePlaceholder
     xfail stubs for GET /architectures/compare (Increment 3 feature).
@@ -58,7 +56,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.core.main import app
 from app.database import get_db
-from app.models.architecture import Architecture, Base, Component, Flow
+from app.models.architecture import Architecture, Base, Component, Flow, Mitigation
 
 # SQLite doesn't know JSONB; reuse the JSON visitor so our ORM models work.
 SQLiteTypeCompiler.visit_JSONB = SQLiteTypeCompiler.visit_JSON  # type: ignore[attr-defined]
@@ -615,89 +613,110 @@ class TestSimulatorEdgeCases:
 
 
 # ===========================================================================
-# 7. Increment 3 Feature Placeholders (xfail until Person 2/3 implement them)
+# 7. Compare Feature Placeholders (xfail until compare endpoint is implemented)
 # ===========================================================================
 
-class TestCloneFeaturePlaceholder:
-    """
-    Tests for POST /architectures/{id}/clone.
+class TestCloneFeature:
 
-    Remove the xfail mark and fill in assertions once Person 2 implements
-    the clone endpoint in issue #83 (Mitigation Suggester Logic & Clone Endpoint).
-    """
-
-    @pytest.mark.xfail(
-        reason="Clone endpoint not yet implemented (issue #83). Remove xfail when done.",
-        strict=False,
-    )
     def test_clone_creates_copy_with_new_id(self, real_client):
         arch_id = _create_arch(real_client)
         r = real_client.post(f"/architectures/{arch_id}/clone")
         assert r.status_code == 201
         data = r.json()
         assert data["id"] != arch_id
-        assert "Clone" in data["name"] or data["name"] != "Test Arch With Components"
+        assert data["is_clone"] is True
+        assert data["parent_id"] == arch_id
+        assert "Clone" in data["name"]
 
-    @pytest.mark.xfail(
-        reason="Clone endpoint not yet implemented (issue #83). Remove xfail when done.",
-        strict=False,
-    )
     def test_clone_copies_all_components(self, real_client):
         arch_id = _create_arch(real_client)
+
+        original = real_client.get(f"/architectures/{arch_id}")
+        assert original.status_code == 200
+        original_data = original.json()
+
         r = real_client.post(f"/architectures/{arch_id}/clone")
         assert r.status_code == 201
         data = r.json()
-        assert len(data["components"]) == 2  # Same as WITH_COMPONENTS
+        assert len(data["components"]) == len(original_data["components"])
+        assert len(data["flows"]) == len(original_data["flows"])
 
-    @pytest.mark.xfail(
-        reason="Clone endpoint not yet implemented (issue #83). Remove xfail when done.",
-        strict=False,
-    )
+        original_component_ids = {c["id"] for c in original_data["components"]}
+        cloned_component_ids = {c["id"] for c in data["components"]}
+        assert original_component_ids.isdisjoint(cloned_component_ids)
+
+        cloned_component_lookup = {c["id"] for c in data["components"]}
+        for flow in data["flows"]:
+            assert flow["source_component_id"] in cloned_component_lookup
+            assert flow["target_component_id"] in cloned_component_lookup
+
     def test_clone_nonexistent_architecture_returns_404(self, real_client):
         r = real_client.post("/architectures/99999/clone")
         assert r.status_code == 404
 
 
-class TestMitigationFeaturePlaceholder:
-    """
-    Tests for GET /architectures/{id}/mitigations.
+class TestMitigationFeature:
 
-    Remove the xfail mark and fill in assertions once Person 2 implements
-    the mitigation suggester in issue #83.
-    """
-
-    @pytest.mark.xfail(
-        reason="Mitigation endpoint not yet implemented (issue #83). Remove xfail when done.",
-        strict=False,
-    )
     def test_get_mitigations_returns_list(self, real_client):
         arch_id = _create_arch(real_client)
+
+        create_r = real_client.post(
+            f"/architectures/{arch_id}/mitigations",
+            json={
+                "type": "network-segmentation",
+                "description": "Segment sensor and control planes.",
+            },
+        )
+        assert create_r.status_code == 201
+
         r = real_client.get(f"/architectures/{arch_id}/mitigations")
         assert r.status_code == 200
         data = r.json()
         assert isinstance(data, list)
+        assert len(data) >= 1
 
-    @pytest.mark.xfail(
-        reason="Mitigation endpoint not yet implemented (issue #83). Remove xfail when done.",
-        strict=False,
-    )
     def test_mitigation_suggestion_has_required_fields(self, real_client):
-        arch_id = _create_arch(real_client)
+        arch_id, component_id = _create_arch_and_component(real_client)
+        create_r = real_client.post(
+            f"/architectures/{arch_id}/mitigations",
+            json={
+                "type": "hardening",
+                "affected_component_id": component_id,
+                "description": "Enable signed firmware updates.",
+            },
+        )
+        assert create_r.status_code == 201
+
         r = real_client.get(f"/architectures/{arch_id}/mitigations")
         assert r.status_code == 200
         if r.json():  # If any suggestions are returned
             suggestion = r.json()[0]
             assert "type" in suggestion
-            assert "affected_component" in suggestion
+            assert "affected_component_id" in suggestion
             assert "description" in suggestion
 
-    @pytest.mark.xfail(
-        reason="Mitigation endpoint not yet implemented (issue #83). Remove xfail when done.",
-        strict=False,
-    )
     def test_get_mitigations_nonexistent_architecture_returns_404(self, real_client):
         r = real_client.get("/architectures/99999/mitigations")
         assert r.status_code == 404
+
+    def test_delete_architecture_cascades_mitigations(self, real_client, db_session):
+        arch_id, component_id = _create_arch_and_component(real_client)
+        create_r = real_client.post(
+            f"/architectures/{arch_id}/mitigations",
+            json={
+                "type": "encryption",
+                "affected_component_id": component_id,
+                "description": "Use mTLS between compute and storage components.",
+            },
+        )
+        assert create_r.status_code == 201
+
+        assert db_session.query(Mitigation).filter(Mitigation.architecture_id == arch_id).count() == 1
+
+        delete_r = real_client.delete(f"/architectures/{arch_id}")
+        assert delete_r.status_code == 204
+
+        assert db_session.query(Mitigation).filter(Mitigation.architecture_id == arch_id).count() == 0
 
 
 class TestCompareFeaturePlaceholder:

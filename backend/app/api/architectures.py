@@ -7,11 +7,13 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session, selectinload
 
 from app.database import get_db
-from app.models.architecture import Architecture, Component, Flow
+from app.models.architecture import Architecture, Component, Flow, Mitigation
 from app.models.schemas import (
     ArchitectureCreate,
     ArchitectureResponse,
     ArchitectureSummaryResponse,
+    MitigationCreate,
+    MitigationResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -22,6 +24,10 @@ _ARCH_LOAD_OPTIONS = [
     selectinload(Architecture.components),
     selectinload(Architecture.flows),
 ]
+
+
+def _clone_name(source_name: str) -> str:
+    return f"{source_name} (Clone)"
 
 
 def _integrity_error_detail(exc: IntegrityError) -> str:
@@ -325,6 +331,194 @@ def get_architecture(
         )
 
     return ArchitectureResponse.model_validate(arch)
+
+
+@router.post(
+    "/{architecture_id}/clone",
+    response_model=ArchitectureResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Clone an architecture with deep copy of components and flows",
+)
+def clone_architecture(
+    architecture_id: int,
+    db: Session = Depends(get_db),
+) -> ArchitectureResponse:
+    try:
+        source = (
+            db.query(Architecture)
+            .options(*_ARCH_LOAD_OPTIONS)
+            .filter(Architecture.id == architecture_id)
+            .first()
+        )
+    except SQLAlchemyError as exc:
+        logger.error("Database error fetching architecture %d for clone: %s", architecture_id, exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to clone architecture. Database error.",
+        ) from exc
+
+    if source is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Architecture with id {architecture_id} not found.",
+        )
+
+    try:
+        clone = Architecture(
+            name=_clone_name(source.name),
+            description=source.description,
+            is_clone=True,
+            parent_id=source.id,
+            properties=dict(source.properties or {}),
+        )
+        db.add(clone)
+        db.flush()
+
+        old_to_new_component_id: dict[int, int] = {}
+        for component in source.components:
+            new_component = Component(
+                architecture_id=clone.id,
+                component_id=component.component_id,
+                name=component.name,
+                component_type=component.component_type,
+                criticality=component.criticality,
+                position_x=component.position_x,
+                position_y=component.position_y,
+                properties=dict(component.properties or {}),
+            )
+            db.add(new_component)
+            db.flush()
+            old_to_new_component_id[component.id] = new_component.id
+
+        for flow in source.flows:
+            db.add(
+                Flow(
+                    architecture_id=clone.id,
+                    source_component_id=old_to_new_component_id[flow.source_component_id],
+                    target_component_id=old_to_new_component_id[flow.target_component_id],
+                    data_type=flow.data_type,
+                    cia_requirement=flow.cia_requirement,
+                    latency_sensitivity=flow.latency_sensitivity,
+                    properties=dict(flow.properties or {}),
+                )
+            )
+
+        db.commit()
+
+        cloned_arch = (
+            db.query(Architecture)
+            .options(*_ARCH_LOAD_OPTIONS)
+            .filter(Architecture.id == clone.id)
+            .first()
+        )
+        return ArchitectureResponse.model_validate(cloned_arch)
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=_integrity_error_detail(exc),
+        ) from exc
+    except SQLAlchemyError as exc:
+        db.rollback()
+        logger.error("Database error cloning architecture %d: %s", architecture_id, exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to clone architecture. Database error.",
+        ) from exc
+
+
+@router.post(
+    "/{architecture_id}/mitigations",
+    response_model=MitigationResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Persist a mitigation suggestion for an architecture",
+)
+def create_mitigation(
+    architecture_id: int,
+    payload: MitigationCreate,
+    db: Session = Depends(get_db),
+) -> MitigationResponse:
+    try:
+        architecture = db.query(Architecture).filter(Architecture.id == architecture_id).first()
+        if architecture is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Architecture with id {architecture_id} not found.",
+            )
+
+        if payload.affected_component_id is not None:
+            component = (
+                db.query(Component)
+                .filter(
+                    Component.id == payload.affected_component_id,
+                    Component.architecture_id == architecture_id,
+                )
+                .first()
+            )
+            if component is None:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                    detail=(
+                        f"affected_component_id {payload.affected_component_id} does not belong "
+                        f"to architecture {architecture_id}."
+                    ),
+                )
+
+        mitigation = Mitigation(
+            architecture_id=architecture_id,
+            type=payload.type.strip(),
+            affected_component_id=payload.affected_component_id,
+            description=payload.description.strip(),
+        )
+        db.add(mitigation)
+        db.commit()
+        db.refresh(mitigation)
+        return MitigationResponse.model_validate(mitigation)
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=_integrity_error_detail(exc),
+        ) from exc
+    except SQLAlchemyError as exc:
+        db.rollback()
+        logger.error("Database error creating mitigation for architecture %d: %s", architecture_id, exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to save mitigation. Database error.",
+        ) from exc
+
+
+@router.get(
+    "/{architecture_id}/mitigations",
+    response_model=list[MitigationResponse],
+    summary="List mitigation suggestions for an architecture",
+)
+def list_mitigations(
+    architecture_id: int,
+    db: Session = Depends(get_db),
+) -> list[MitigationResponse]:
+    try:
+        architecture = db.query(Architecture).filter(Architecture.id == architecture_id).first()
+        if architecture is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Architecture with id {architecture_id} not found.",
+            )
+
+        rows = (
+            db.query(Mitigation)
+            .filter(Mitigation.architecture_id == architecture_id)
+            .order_by(Mitigation.created_at.desc())
+            .all()
+        )
+        return [MitigationResponse.model_validate(row) for row in rows]
+    except SQLAlchemyError as exc:
+        logger.error("Database error listing mitigations for architecture %d: %s", architecture_id, exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve mitigations. Database error.",
+        ) from exc
 
 
 @router.delete(

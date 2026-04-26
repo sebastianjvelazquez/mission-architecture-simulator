@@ -16,6 +16,7 @@
 
 DROP TABLE IF EXISTS simulation_results CASCADE;
 DROP TABLE IF EXISTS scenarios CASCADE;
+DROP TABLE IF EXISTS mitigations CASCADE;
 DROP TABLE IF EXISTS flows CASCADE;
 DROP TABLE IF EXISTS components CASCADE;
 DROP TABLE IF EXISTS architectures CASCADE;
@@ -31,6 +32,8 @@ CREATE TABLE architectures (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
+    is_clone BOOLEAN NOT NULL DEFAULT FALSE,
+    parent_id INTEGER REFERENCES architectures(id) ON DELETE SET NULL,
 
     -- Flexible properties (JSONB for future extensibility)
     properties JSONB DEFAULT '{}'::jsonb,
@@ -48,6 +51,7 @@ CREATE TABLE architectures (
 
 -- Indexes for architectures
 CREATE INDEX idx_architectures_created_at ON architectures(created_at DESC);
+CREATE INDEX idx_architectures_parent_id ON architectures(parent_id);
 -- CREATE INDEX idx_architectures_user_id ON architectures(user_id); -- Uncomment when users added
 
 
@@ -141,6 +145,27 @@ CREATE INDEX idx_flows_source_target ON flows(source_component_id, target_compon
 
 -- GIN index for JSONB property queries
 CREATE INDEX idx_flows_properties ON flows USING GIN (properties);
+
+
+-- ============================================================================
+-- TABLE: mitigations
+-- ============================================================================
+-- Description: Persisted mitigation suggestions linked to an architecture.
+-- ============================================================================
+
+CREATE TABLE mitigations (
+    id SERIAL PRIMARY KEY,
+    architecture_id INTEGER NOT NULL REFERENCES architectures(id) ON DELETE CASCADE,
+    type VARCHAR(100) NOT NULL,
+    affected_component_id INTEGER REFERENCES components(id) ON DELETE SET NULL,
+    description TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for mitigations
+CREATE INDEX idx_mitigations_architecture_id ON mitigations(architecture_id);
+CREATE INDEX idx_mitigations_type ON mitigations(type);
+CREATE INDEX idx_mitigations_affected_component_id ON mitigations(affected_component_id);
 
 
 -- ============================================================================
