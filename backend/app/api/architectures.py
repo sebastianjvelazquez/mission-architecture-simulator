@@ -482,7 +482,11 @@ def create_mitigation(
         ) from exc
     except SQLAlchemyError as exc:
         db.rollback()
-        logger.error("Database error creating mitigation for architecture %d: %s", architecture_id, exc)
+        logger.error(
+            "Database error creating mitigation for architecture %d: %s",
+            architecture_id,
+            exc,
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to save mitigation. Database error.",
@@ -514,7 +518,11 @@ def list_mitigations(
         )
         return [MitigationResponse.model_validate(row) for row in rows]
     except SQLAlchemyError as exc:
-        logger.error("Database error listing mitigations for architecture %d: %s", architecture_id, exc)
+        logger.error(
+            "Database error listing mitigations for architecture %d: %s",
+            architecture_id,
+            exc,
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve mitigations. Database error.",
