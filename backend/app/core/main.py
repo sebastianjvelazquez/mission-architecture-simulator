@@ -27,6 +27,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.architectures import router as architectures_router
+from app.database import check_connection
 from app.api.scenarios import results_router as simulation_results_router
 from app.api.scenarios import router as scenarios_router
 from app.core.config import get_settings
@@ -105,13 +106,31 @@ async def health_check():
     deployment (development vs staging vs production) without having to check
     environment variables manually.
     """
-    # We return a plain dict here instead of a Pydantic model because this
-    # endpoint is intentionally simple. FastAPI serializes dicts to JSON
-    # automatically, so no extra model definition is needed.
     return {
         "status": "healthy",
         "environment": settings.ENVIRONMENT,
     }
+
+
+@app.get("/health/db")
+async def health_check_db():
+    """
+    Database connectivity check for Render deployment verification.
+
+    Returns 200 when the backend can reach the database, 503 otherwise.
+    Use this endpoint to confirm the DATABASE_URL is correctly configured
+    and the production database is reachable after provisioning.
+    """
+    from fastapi import Response
+
+    connected = check_connection()
+    if connected:
+        return {"status": "connected", "environment": settings.ENVIRONMENT}
+    return Response(
+        content='{"status": "unreachable"}',
+        status_code=503,
+        media_type="application/json",
+    )
 
 
 # Register API routers
