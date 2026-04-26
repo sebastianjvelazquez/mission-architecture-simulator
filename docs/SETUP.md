@@ -95,6 +95,7 @@ Important:
 - Always include `sslmode=require` in production.
 - Do not hardcode secrets; set `DATABASE_URL` in Render environment variables.
 - Render PostgreSQL free tier has a 1 GB storage limit. Monitor row growth and JSONB-heavy tables.
+- Render free PostgreSQL instances expire after 90 days. Plan periodic reprovisioning and backup restore.
 
 ### Backup and Restore (Render PostgreSQL)
 
