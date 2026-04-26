@@ -3,6 +3,7 @@ from app.models.architecture import (  # noqa: F401
     Base,
     Component,
     Flow,
+    Mitigation,
     Scenario,
     SimulationResult,
 )

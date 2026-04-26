@@ -3,6 +3,7 @@
 from datetime import datetime, timezone
 
 from sqlalchemy import (
+    Boolean,
     Column,
     DateTime,
     Float,
@@ -31,6 +32,12 @@ class Architecture(Base):
     id: int = Column(Integer, primary_key=True, autoincrement=True)
     name: str = Column(String(255), nullable=False)
     description: str | None = Column(Text, nullable=True)
+    is_clone: bool = Column(Boolean, nullable=False, default=False)
+    parent_id: int | None = Column(
+        Integer,
+        ForeignKey("architectures.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     properties: dict | None = Column(JSONB, nullable=True, default=dict)
     created_at: datetime = Column(DateTime(timezone=True), nullable=False, default=_utcnow)
     updated_at: datetime = Column(
@@ -58,10 +65,30 @@ class Architecture(Base):
         passive_deletes=True,
         lazy="select",
     )
+    mitigations = relationship(
+        "Mitigation",
+        back_populates="architecture",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        lazy="select",
+    )
+    parent = relationship(
+        "Architecture",
+        remote_side=[id],
+        back_populates="clones",
+        foreign_keys=[parent_id],
+    )
+    clones = relationship(
+        "Architecture",
+        back_populates="parent",
+        foreign_keys=[parent_id],
+        lazy="select",
+    )
 
     __table_args__ = (
         Index("ix_architectures_name", "name"),
         Index("ix_architectures_created_at", "created_at"),
+        Index("ix_architectures_parent_id", "parent_id"),
     )
 
     def __repr__(self) -> str:
@@ -255,4 +282,39 @@ class SimulationResult(Base):
         return (
             f"<SimulationResult(id={self.id}, scenario_id={self.scenario_id}, "
             f"baseline={self.baseline_score}, compromised={self.compromised_score})>"
+        )
+
+
+class Mitigation(Base):
+
+    __tablename__ = "mitigations"
+
+    id: int = Column(Integer, primary_key=True, autoincrement=True)
+    architecture_id: int = Column(
+        Integer,
+        ForeignKey("architectures.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    type: str = Column(String(100), nullable=False)
+    affected_component_id: int | None = Column(
+        Integer,
+        ForeignKey("components.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    description: str = Column(Text, nullable=False)
+    created_at: datetime = Column(DateTime(timezone=True), nullable=False, default=_utcnow)
+
+    architecture = relationship("Architecture", back_populates="mitigations")
+    affected_component = relationship("Component")
+
+    __table_args__ = (
+        Index("ix_mitigations_architecture_id", "architecture_id"),
+        Index("ix_mitigations_type", "type"),
+        Index("ix_mitigations_affected_component_id", "affected_component_id"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<Mitigation(id={self.id}, architecture_id={self.architecture_id}, "
+            f"type='{self.type}')>"
         )
