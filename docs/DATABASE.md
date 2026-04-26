@@ -196,6 +196,7 @@ ORDER BY conrelid::regclass::text, conname;
 ### Free Tier Constraint
 
 Render PostgreSQL free tier has a 1 GB storage limit. This must be monitored to avoid write failures and backup truncation risk.
+Render free PostgreSQL instances also expire after 90 days, so scheduled backup and restore drills are required.
 
 ### Backup
 
