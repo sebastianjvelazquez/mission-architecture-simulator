@@ -7,6 +7,10 @@ import Link from "next/dist/client/link";
 import { Node, Edge, MarkerType } from "reactflow";
 
 const inter = Inter({ weight: "500", subsets: ['latin'] });
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(
+  /\/$/,
+  "",
+);
 
 type ArchitectureSummary = {
   id: number;
@@ -32,9 +36,6 @@ type LoadedArchitecture = {
     data_type: string | null;
     cia_requirement: string | null;
     latency_sensitivity: string | null;
-    // NEED TO ADD THESE FIELDS TO DB AND BACKEND TO TRACK HANDLE IDS FOR REACT FLOW CONNECTIONS
-    // THIS WILL BE TOP PRIORITY FOR NOW AS WITHOUT THIS CANNOT LOAD MODELS WITH PRECISION, IF ACCEPTABLE CAN DEFAULT TO SAME LOGIC BUT NEED TO MAKE SURE
-    // ADDITIONALLY NEED TO MAKE SURE THESE VARIABLES ARE UPDATED ACCORDINGLY THROUGHOUT BOTH EDITOR AND DASHBOARD NAVBARS FOR SAVING AND LOADING
     source_handle: string | null;
     target_handle: string | null;
   }>;
@@ -83,7 +84,7 @@ export default function Navbar({ nodes, edges, setNodes, setEdges}: {
 
     // INTERACTING WITH BACKEND
     try {
-      const response = await fetch('http://localhost:8000/architectures', {
+      const response = await fetch(`${API_BASE_URL}/architectures`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -114,7 +115,7 @@ export default function Navbar({ nodes, edges, setNodes, setEdges}: {
     setIsLoading(true);
 
     try{
-      const response = await fetch('http://localhost:8000/architectures');
+      const response = await fetch(`${API_BASE_URL}/architectures`);
       if (!response.ok) {
         throw new Error('Failed to fetch architecture list');
       }
@@ -139,7 +140,9 @@ export default function Navbar({ nodes, edges, setNodes, setEdges}: {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:8000/architectures/${selectedArchitectureId}`);
+      const response = await fetch(
+        `${API_BASE_URL}/architectures/${selectedArchitectureId}`
+      );
       if (!response.ok) {
         throw new Error('Failed to fetch selected architecture');
       }
