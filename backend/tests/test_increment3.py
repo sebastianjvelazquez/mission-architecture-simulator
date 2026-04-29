@@ -719,6 +719,161 @@ class TestMitigationFeature:
         assert db_session.query(Mitigation).filter(Mitigation.architecture_id == arch_id).count() == 0
 
 
+# ===========================================================================
+# 8. Clone endpoint — error paths
+# ===========================================================================
+
+class TestCloneErrors:
+    """Cover error branches added by the team in clone_architecture."""
+
+    def test_clone_sqlalchemy_error_on_query_returns_500(self, mock_client):
+        """First try-block in clone_architecture: db.query raises SQLAlchemyError."""
+        db = _mock_db(query_exc=_make_sqlalchemy_error())
+        app.dependency_overrides[get_db] = _override(db)
+        try:
+            r = mock_client.post("/architectures/1/clone")
+            assert r.status_code == 500
+            assert "Database error" in r.json()["detail"]
+        finally:
+            app.dependency_overrides.pop(get_db, None)
+
+    def test_clone_sqlalchemy_error_on_commit_returns_500(self, mock_client):
+        """Second try-block in clone_architecture: commit raises SQLAlchemyError."""
+        db = MagicMock(spec=Session)
+        mock_source = MagicMock(spec=Architecture)
+        mock_source.id = 1
+        mock_source.name = "Original"
+        mock_source.description = None
+        mock_source.properties = {}
+        mock_source.components = []
+        mock_source.flows = []
+        db.query.return_value.options.return_value.filter.return_value.first.return_value = mock_source
+        db.commit.side_effect = _make_sqlalchemy_error()
+        app.dependency_overrides[get_db] = _override(db)
+        try:
+            r = mock_client.post("/architectures/1/clone")
+            assert r.status_code == 500
+            assert "Database error" in r.json()["detail"]
+        finally:
+            app.dependency_overrides.pop(get_db, None)
+
+    def test_clone_integrity_error_on_commit_returns_409(self, mock_client):
+        """Second try-block in clone_architecture: commit raises IntegrityError."""
+        db = MagicMock(spec=Session)
+        mock_source = MagicMock(spec=Architecture)
+        mock_source.id = 1
+        mock_source.name = "Original"
+        mock_source.description = None
+        mock_source.properties = {}
+        mock_source.components = []
+        mock_source.flows = []
+        db.query.return_value.options.return_value.filter.return_value.first.return_value = mock_source
+        db.commit.side_effect = _make_integrity_error("UNIQUE constraint failed")
+        app.dependency_overrides[get_db] = _override(db)
+        try:
+            r = mock_client.post("/architectures/1/clone")
+            assert r.status_code == 409
+        finally:
+            app.dependency_overrides.pop(get_db, None)
+
+
+# ===========================================================================
+# 9. Mitigation endpoint — error paths
+# ===========================================================================
+
+class TestMitigationErrors:
+    """Cover error branches in create_mitigation and list_mitigations."""
+
+    def test_create_mitigation_nonexistent_arch_returns_404(self, real_client):
+        r = real_client.post(
+            "/architectures/99999/mitigations",
+            json={"type": "hardening", "description": "test"},
+        )
+        assert r.status_code == 404
+
+    def test_create_mitigation_nonexistent_component_returns_422(self, real_client):
+        arch_id = _create_arch(real_client)
+        r = real_client.post(
+            f"/architectures/{arch_id}/mitigations",
+            json={
+                "type": "hardening",
+                "affected_component_id": 999999,
+                "description": "Bad component id",
+            },
+        )
+        assert r.status_code == 422
+        assert "does not belong" in r.json()["detail"]
+
+    def test_create_mitigation_sqlalchemy_error_returns_500(self, mock_client):
+        db = _mock_db(query_exc=_make_sqlalchemy_error())
+        app.dependency_overrides[get_db] = _override(db)
+        try:
+            r = mock_client.post(
+                "/architectures/1/mitigations",
+                json={"type": "hardening", "description": "test"},
+            )
+            assert r.status_code == 500
+        finally:
+            app.dependency_overrides.pop(get_db, None)
+
+    def test_create_mitigation_integrity_error_on_commit_returns_409(self, mock_client):
+        """Trigger IntegrityError inside create_mitigation's except IntegrityError block."""
+        db = _mock_db(commit_exc=_make_integrity_error("UNIQUE constraint failed"))
+        app.dependency_overrides[get_db] = _override(db)
+        try:
+            r = mock_client.post(
+                "/architectures/1/mitigations",
+                json={"type": "hardening", "description": "test"},
+            )
+            assert r.status_code == 409
+        finally:
+            app.dependency_overrides.pop(get_db, None)
+
+    def test_list_mitigations_sqlalchemy_error_returns_500(self, mock_client):
+        db = _mock_db(query_exc=_make_sqlalchemy_error())
+        app.dependency_overrides[get_db] = _override(db)
+        try:
+            r = mock_client.get("/architectures/1/mitigations")
+            assert r.status_code == 500
+        finally:
+            app.dependency_overrides.pop(get_db, None)
+
+    def test_create_mitigation_without_component_id_succeeds(self, real_client):
+        arch_id = _create_arch(real_client)
+        r = real_client.post(
+            f"/architectures/{arch_id}/mitigations",
+            json={"type": "network-segmentation", "description": "Segment the network."},
+        )
+        assert r.status_code == 201
+        data = r.json()
+        assert data["type"] == "network-segmentation"
+        assert data["affected_component_id"] is None
+
+
+# ===========================================================================
+# 10. Health DB endpoint
+# ===========================================================================
+
+class TestHealthDbEndpoint:
+    """Cover the /health/db endpoint including the 503 unreachable path."""
+
+    def test_health_db_connected_returns_200(self):
+        from app.database import check_connection
+
+        with patch("app.core.main.check_connection", return_value=True):
+            client = TestClient(app)
+            r = client.get("/health/db")
+        assert r.status_code == 200
+        assert r.json()["status"] == "connected"
+
+    def test_health_db_unreachable_returns_503(self):
+        with patch("app.core.main.check_connection", return_value=False):
+            client = TestClient(app)
+            r = client.get("/health/db")
+        assert r.status_code == 503
+        assert r.json()["status"] == "unreachable"
+
+
 class TestCompareFeaturePlaceholder:
     """
     Tests for GET /architectures/compare?baseline_id={id}&mitigated_id={id}.
