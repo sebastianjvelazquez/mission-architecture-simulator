@@ -21,168 +21,128 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import Navbar from "@/components/NavbarEditor";
+type MitigationKind = "redundancy" | "validation_gate" | "segmentation_boundary";
 
-// ALL CUSTOM NODES
-function SensorNode({ data }: { data: { label: string } }) {
+type CanvasNodeData = {
+  label: string;
+  criticality?: number;
+  variant?: MitigationKind;
+};
+
+const mitigationNodeTypeToVariant: Record<string, MitigationKind> = {
+  Redundancy: "redundancy",
+  ValidationGate: "validation_gate",
+  SegmentationBoundary: "segmentation_boundary",
+};
+
+const mitigationVariants: Array<{ type: string; label: string; variant: MitigationKind }> = [
+  { type: "Redundancy", label: "Redundancy Node", variant: "redundancy" },
+  { type: "ValidationGate", label: "Validation Gate", variant: "validation_gate" },
+  { type: "SegmentationBoundary", label: "Segmentation Boundary", variant: "segmentation_boundary" },
+];
+
+const isMitigationNodeType = (type?: string) => Boolean(type && mitigationNodeTypeToVariant[type]);
+
+const getEdgeStyle = (sourceType?: string, targetType?: string) => {
+  if (isMitigationNodeType(sourceType) || isMitigationNodeType(targetType)) {
+    return {
+      stroke: "#38bdf8",
+      strokeWidth: 2,
+      strokeDasharray: "6 4",
+    };
+  }
+
+  return {
+    stroke: "#fff",
+    strokeWidth: 2,
+  };
+};
+
+const createNodeStyle = (borderColor: string, options?: { borderStyle?: string; background?: string; radius?: string }) => ({
+  padding: "10px 20px",
+  borderRadius: options?.radius ?? "100px",
+  background: options?.background ?? "rgba(0, 0, 0, 0.5)",
+  border: `1px ${options?.borderStyle ?? "solid"} ${borderColor}`,
+});
+
+function StandardNode({ data, borderColor }: { data: CanvasNodeData; borderColor: string }) {
   return (
-    <div
-      style={{
-        padding: "10px 20px",
-        borderRadius: "100px",
-        background: "rgba(0, 0, 0, 0.5)",
-        border: "1px solid #ED1C23",
-      }}
-    >
-      {/* Top Handle */}
+    <div style={createNodeStyle(borderColor)}>
       <Handle type="target" position={Position.Top} id="top" />
-      
-      {/* Right Handle */}
       <Handle type="source" position={Position.Right} id="right" />
-      
-      {/* Bottom Handle */}
       <Handle type="source" position={Position.Bottom} id="bottom" />
-      
-      {/* Left Handle */}
       <Handle type="target" position={Position.Left} id="left" />
-      
       <div style={{ color: "white" }}>{data.label}</div>
     </div>
   );
 }
 
-function ComputeNode({ data }: { data: { label: string } }) {
+function MitigationNode({ data }: { data: CanvasNodeData }) {
+  const variant = data.variant ?? "redundancy";
+
+  if (variant === "segmentation_boundary") {
+    return (
+      <div
+        style={createNodeStyle("#38bdf8", {
+          borderStyle: "dashed",
+          background: "rgba(8, 47, 73, 0.42)",
+          radius: "18px",
+        })}
+      >
+        <Handle type="target" position={Position.Top} id="top" />
+        <Handle type="source" position={Position.Right} id="right" />
+        <Handle type="source" position={Position.Bottom} id="bottom" />
+        <Handle type="target" position={Position.Left} id="left" />
+        <div style={{ color: "#dbeafe", fontWeight: 500, letterSpacing: "0.04em"}}>
+          {data.label}
+        </div>
+      </div>
+    );
+  }
+
+  const borderColor = variant === "validation_gate" ? "#f59e0b" : "#22c55e";
+
   return (
     <div
-      style={{
-        padding: "10px 20px",
-        borderRadius: "100px",
-        background: "rgba(0, 0, 0, 0.5)",
-        border: "1px solid #4DA3FF",
-      }}
+      style={createNodeStyle(borderColor, {
+        borderStyle: variant === "validation_gate" ? "dashed" : "solid",
+        background: variant === "validation_gate" ? "rgba(69, 39, 11, 0.55)" : "rgba(15, 23, 42, 0.72)",
+        radius: variant === "validation_gate" ? "16px" : "100px",
+      })}
     >
-      {/* Top Handle */}
       <Handle type="target" position={Position.Top} id="top" />
-      
-      {/* Right Handle */}
       <Handle type="source" position={Position.Right} id="right" />
-      
-      {/* Bottom Handle */}
       <Handle type="source" position={Position.Bottom} id="bottom" />
-      
-      {/* Left Handle */}
       <Handle type="target" position={Position.Left} id="left" />
-      
-      <div style={{ color: "white" }}>{data.label}</div>
+      <div style={{ color: "white", fontWeight: 500, letterSpacing: "0.04em" }}>
+        {data.label}
+      </div>
     </div>
   );
 }
 
-function CommsLinkNode({ data }: { data: { label: string } }) {
-  return (
-    <div
-      style={{
-        padding: "10px 20px",
-        borderRadius: "100px",
-        background: "rgba(0, 0, 0, 0.5)",
-        border: "1px solid #34D399",
-      }}
-    >
-      {/* Top Handle */}
-      <Handle type="target" position={Position.Top} id="top" />
-      
-      {/* Right Handle */}
-      <Handle type="source" position={Position.Right} id="right" />
-      
-      {/* Bottom Handle */}
-      <Handle type="source" position={Position.Bottom} id="bottom" />
-      
-      {/* Left Handle */}
-      <Handle type="target" position={Position.Left} id="left" />
-      
-      <div style={{ color: "white" }}>{data.label}</div>
-    </div>
-  );
+function SensorNode({ data }: { data: CanvasNodeData }) {
+  return <StandardNode data={data} borderColor="#ED1C23" />;
 }
 
-function ControlNode({ data }: { data: { label: string } }) {
-  return (
-    <div
-      style={{
-        padding: "10px 20px",
-        borderRadius: "100px",
-        background: "rgba(0, 0, 0, 0.5)",
-        border: "1px solid #F59E0B",
-      }}
-    >
-      {/* Top Handle */}
-      <Handle type="target" position={Position.Top} id="top" />
-      
-      {/* Right Handle */}
-      <Handle type="source" position={Position.Right} id="right" />
-      
-      {/* Bottom Handle */}
-      <Handle type="source" position={Position.Bottom} id="bottom" />
-      
-      {/* Left Handle */}
-      <Handle type="target" position={Position.Left} id="left" />
-      
-      <div style={{ color: "white" }}>{data.label}</div>
-    </div>
-  );
+function ComputeNode({ data }: { data: CanvasNodeData }) {
+  return <StandardNode data={data} borderColor="#4DA3FF" />;
 }
 
-function StorageNode({ data }: { data: { label: string } }) {
-  return (
-    <div
-      style={{
-        padding: "10px 20px",
-        borderRadius: "100px",
-        background: "rgba(0, 0, 0, 0.5)",
-        border: "1px solid #A78BFA",
-      }}
-    >
-      {/* Top Handle */}
-      <Handle type="target" position={Position.Top} id="top"/>
-      
-      {/* Right Handle */}
-      <Handle type="source" position={Position.Right} id="right" />
-      
-      {/* Bottom Handle */}
-      <Handle type="source" position={Position.Bottom} id="bottom" />
-      
-      {/* Left Handle */}
-      <Handle type="target" position={Position.Left} id="left" />
-      
-      <div style={{ color: "white" }}>{data.label}</div>
-    </div>
-  );
+function CommsLinkNode({ data }: { data: CanvasNodeData }) {
+  return <StandardNode data={data} borderColor="#34D399" />;
 }
 
-function ExternalNode({ data }: { data: { label: string } }) {
-  return (
-    <div
-      style={{
-        padding: "10px 20px",
-        borderRadius: "100px",
-        background: "rgba(0, 0, 0, 0.5)",
-        border: "1px solid #F472B6",
-      }}
-    >
-      {/* Top Handle */}
-      <Handle type="target" position={Position.Top} id="top" />
-      
-      {/* Right Handle */}
-      <Handle type="source" position={Position.Right} id="right" />
-      
-      {/* Bottom Handle */}
-      <Handle type="source" position={Position.Bottom} id="bottom" />
-      
-      {/* Left Handle */}
-      <Handle type="target" position={Position.Left} id="left" />
-      
-      <div style={{ color: "white" }}>{data.label}</div>
-    </div>
-  );
+function ControlNode({ data }: { data: CanvasNodeData }) {
+  return <StandardNode data={data} borderColor="#F59E0B" />;
+}
+
+function StorageNode({ data }: { data: CanvasNodeData }) {
+  return <StandardNode data={data} borderColor="#A78BFA" />;
+}
+
+function ExternalNode({ data }: { data: CanvasNodeData }) {
+  return <StandardNode data={data} borderColor="#F472B6" />;
 }
 {/* END OF CUSTOM NODES */}
 
@@ -194,6 +154,9 @@ const nodeTypes = {
   Control: ControlNode,
   Storage: StorageNode,
   External: ExternalNode,
+  Redundancy: MitigationNode,
+  ValidationGate: MitigationNode,
+  SegmentationBoundary: MitigationNode,
 };
 
 // SIDEBAR COLORS USE FOR OUTLINE
@@ -204,6 +167,12 @@ const sidebarComponents = [
   { type: "Control", color: "#F59E0B"},
   { type: "Storage", color: "#A78BFA"},
   { type: "External", color: "#F472B6"},
+];
+
+const mitigationSidebarComponents = [
+  { type: "Redundancy", label: "Redundancy Node", variant: "redundancy" as MitigationKind, color: "#22c55e" },
+  { type: "ValidationGate", label: "Validation Gate", variant: "validation_gate" as MitigationKind, color: "#f59e0b" },
+  { type: "SegmentationBoundary", label: "Segmentation Boundary", variant: "segmentation_boundary" as MitigationKind, color: "#38bdf8" },
 ];
 
 // NODE EDIT MODAL COMPONENT
@@ -541,9 +510,9 @@ function EdgeEditModal({ isOpen, currentLabel, currentDataTypeEdge, currentCiaRe
 }
 
 export default function Home() {
-  const [nodes, setNodes] = useState<Node<{ label: string }>[]>([]);
+  const [nodes, setNodes] = useState<Node<CanvasNodeData>[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
-  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [selectedNode, setSelectedNode] = useState<Node<CanvasNodeData> | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
   const [isEdgeModalOpen, setIsEdgeModalOpen] = useState(false);
@@ -562,20 +531,17 @@ export default function Home() {
   // CONNECTIONS BETWEEN NODES (ARROWS)
   const onConnect = useCallback(
     (connection: Connection) => {
-      rawLabel: "";
       const sourceNode = nodes.find((n) => n.id === connection.source);
       const targetNode = nodes.find((n) => n.id === connection.target);
+      const style = getEdgeStyle(sourceNode?.type, targetNode?.type);
 
       setEdges((eds) => addEdge({
         ...connection,
         markerEnd: {
           type: MarkerType.ArrowClosed,
-          color: "#fff",
+          color: isMitigationNodeType(sourceNode?.type) || isMitigationNodeType(targetNode?.type) ? "#38bdf8" : "#fff",
         },
-        style: {
-          stroke: "#fff",
-          strokeWidth: 2,
-        },
+        style,
         label: "",
         labelStyle: { fill: "#fff", fontWeight: 500 },
         labelBgStyle: { fill: "#141414"},
@@ -659,7 +625,7 @@ export default function Home() {
       });
 
       setNodes((nds) => {
-        const id = `${nds.length + 1}`;
+        const id = crypto.randomUUID();
         return [
           ...nds,
           {
@@ -673,6 +639,53 @@ export default function Home() {
     },
     [reactFlowInstance]
   );
+
+  const addCanvasNode = useCallback((type: string, label: string) => {
+    setNodes((currentNodes) => {
+      const id = crypto.randomUUID();
+      const positionOffset = currentNodes.length * 22;
+
+      return [
+        ...currentNodes,
+        {
+          id,
+          type,
+          position: {
+            x: 120 + positionOffset,
+            y: 120 + positionOffset,
+          },
+          data: {
+            label,
+            criticality: 1,
+          },
+        },
+      ];
+    });
+  }, []);
+
+  const addMitigationNode = useCallback((variant: MitigationKind, label: string, type: string) => {
+    setNodes((currentNodes) => {
+      const id = crypto.randomUUID();
+      const positionOffset = currentNodes.length * 22;
+
+      return [
+        ...currentNodes,
+        {
+          id,
+          type,
+          position: {
+            x: 180 + positionOffset,
+            y: 120 + positionOffset,
+          },
+          data: {
+            label,
+            criticality: 1,
+            variant,
+          },
+        },
+      ];
+    });
+  }, []);
 
   const handleDeleteAll = () => {
     setNodes([]);
@@ -713,15 +726,31 @@ export default function Home() {
             flexDirection: "column",
             margin: "14px 0",
             backdropFilter: "blur(10px)",
+            minHeight: 0,
           }}
         >
-          {/* HEADER CONTAINER */}
           <div style={{
-            padding: "20px 20px 16px",
-            borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+            padding: "14px 20px 12px",
+            borderBottom: "1px solid rgba(255, 255, 255, 0.04)",
+          }}>
+            <div style={{
+              fontSize: "0.72rem",
+              color: "#8a8a94",
+              lineHeight: "1.45",
+            }}>
+              <div>Click a component or mitigation to add it. Double-click nodes/edges to edit. Connect nodes to create links. Scroll in components to view all.</div>
+            </div>
+          </div>
+
+          <div style={{
+            flex: 1,
+            minHeight: 0,
+            padding: "16px 20px",
+            borderBottom: "1px solid rgba(255, 255, 255, 0.04)",
+            overflow: "hidden",
           }}>
             <h3 style={{
-              margin: 0,
+              margin: "0 0 12px 0",
               fontSize: "0.75rem",
               fontWeight: 500,
               letterSpacing: "0.1em",
@@ -730,91 +759,134 @@ export default function Home() {
             }}>
               Components
             </h3>
-          </div>
-
-          {/* INSTRUCTIONS CONTAINER */}
-          <div style={{
-            padding: "16px 20px",
-            borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-          }}>
             <div style={{
-              fontSize: "0.75rem",
-              color: "#808088",
-              lineHeight: "1.5",
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
+              maxHeight: "100%",
+              overflowY: "auto",
+              paddingRight: "4px",
             }}>
-              <div style={{ marginBottom: "6px" }}>• Drag and drop components onto canvas</div>
-              <div style={{ marginBottom: "6px" }}>• Double-click to edit nodes/edges</div>
-              <div>• Connect nodes to link</div>
+              {sidebarComponents.map((component) => (
+                <button
+                  key={component.type}
+                  type="button"
+                  onClick={() => addCanvasNode(component.type, component.type)}
+                  style={{
+                    width: "100%",
+                    padding: "12px 14px",
+                    backgroundColor: "rgba(255, 255, 255, 0.04)",
+                    color: "#FFFFFF",
+                    border: `1px solid ${component.color}33`,
+                    borderRadius: "3px",
+                    textAlign: "left",
+                    cursor: "pointer",
+                    fontSize: "0.85rem",
+                    fontWeight: 400,
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.08)";
+                    e.currentTarget.style.borderColor = component.color;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.04)";
+                    e.currentTarget.style.borderColor = `${component.color}33`;
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <span
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "999px",
+                        backgroundColor: component.color,
+                        boxShadow: `0 0 8px ${component.color}`,
+                        flexShrink: 0,
+                      }}
+                    />
+                    <span>{component.type}</span>
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* COMPONENT LIST CONTAINER */}
           <div style={{
             flex: 1,
+            minHeight: 0,
             padding: "16px 20px",
-            overflowY: "auto",
+            borderTop: "1px solid rgba(255, 255, 255, 0.04)",
+            borderBottom: "1px solid rgba(255, 255, 255, 0.04)",
+            overflow: "hidden",
           }}>
-            <ul
-              style={{
-                listStyle: "none",
-                padding: 0,
-                margin: 0,
-                display: "flex",
-                flexDirection: "column",
-                gap: "8px",
-              }}
-            >
-              {sidebarComponents.map((component) => (
-                <li key={component.type}>
-                  <button
-                    type="button"
-                    draggable
-                    onDragStart={(event) => onDragStart(event, component.type)}
-                    style={{
-                      width: "100%",
-                      padding: "12px 14px",
-                      backgroundColor: "rgba(255, 255, 255, 0.04)",
-                      color: "#FFFFFF",
-                      border: "1px solid rgba(255, 255, 255, 0.1)",
-                      borderRadius: "3px",
-                      textAlign: "left",
-                      cursor: "grab",
-                      fontSize: "0.85rem",
-                      fontWeight: 400,
-                      transition: "all 0.15s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.08)";
-                      e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.2)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.04)";
-                      e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <span
-                        style={{
-                          width: "8px",
-                          height: "8px",
-                          borderRadius: "999px",
-                          backgroundColor: component.color,
-                          boxShadow: `0 0 8px ${component.color}`,
-                          flexShrink: 0,
-                        }}
-                      />
-                      <span>{component.type}</span>
-                    </div>
-                  </button>
-                </li>
+            <h3 style={{
+              margin: "0 0 12px 0",
+              fontSize: "0.75rem",
+              fontWeight: 500,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: "#A0A0A8",
+            }}>
+              Mitigations
+            </h3>
+            <div style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
+              maxHeight: "100%",
+              overflowY: "auto",
+              paddingRight: "4px",
+            }}>
+              {mitigationSidebarComponents.map((mitigation) => (
+                <button
+                  key={mitigation.type}
+                  type="button"
+                  onClick={() => addMitigationNode(mitigation.variant, mitigation.label, mitigation.type)}
+                  style={{
+                    width: "100%",
+                    padding: "12px 14px",
+                    backgroundColor: "rgba(255, 255, 255, 0.04)",
+                    color: "#FFFFFF",
+                    border: `1px solid ${mitigation.color}33`,
+                    borderRadius: "3px",
+                    textAlign: "left",
+                    cursor: "pointer",
+                    fontSize: "0.85rem",
+                    fontWeight: 400,
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.08)";
+                    e.currentTarget.style.borderColor = mitigation.color;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.04)";
+                    e.currentTarget.style.borderColor = `${mitigation.color}33`;
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <span
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "999px",
+                        backgroundColor: mitigation.color,
+                        boxShadow: `0 0 8px ${mitigation.color}`,
+                        flexShrink: 0,
+                      }}
+                    />
+                    <span>{mitigation.label}</span>
+                  </div>
+                </button>
               ))}
-            </ul>
+            </div>
           </div>
 
           {/* FOOTER CONTAINER - DELETE ACTIONS */}
           <div style={{
             padding: "16px 20px",
-            borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+            borderTop: "1px solid rgba(255, 255, 255, 0.04)",
           }}>
             <button
               onClick={handleDeleteAll}

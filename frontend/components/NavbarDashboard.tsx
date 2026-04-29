@@ -61,6 +61,7 @@ export default function Navbar({ onSimulationCompleted, onCompareCompleted }: Na
   const [isFetchingComponents, setIsFetchingComponents] = useState(false);
   const [isRunningSimulation, setIsRunningSimulation] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const [architectureList, setArchitectureList] = useState<ArchitectureSummary[]>([]);
   const [selectedArchitectureId, setSelectedArchitectureId] = useState<number | null>(null);
   const [selectedScenarioType, setSelectedScenarioType] = useState<ScenarioType>("node_compromise");
@@ -83,6 +84,19 @@ export default function Navbar({ onSimulationCompleted, onCompareCompleted }: Na
     setSelectedCompareTargetComponentIdLeft("");
     setSelectedCompareTargetComponentIdRight("");
   };
+
+  const showToast = (kind: "success" | "error", message: string) => {
+    setToast({ kind, message });
+  };
+
+  useEffect(() => {
+    if (!toast) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => setToast(null), 2800);
+    return () => window.clearTimeout(timeout);
+  }, [toast]);
 
   const runSimulationRequest = async (
     architectureId: number,
@@ -130,6 +144,7 @@ export default function Navbar({ onSimulationCompleted, onCompareCompleted }: Na
     } catch (error) {
       console.error("Error fetching architecture list:", error);
       setRunError("Unable to load saved architectures. Please try again.");
+      showToast("error", "Unable to load saved architectures.");
     } finally {
       setIsFetchingArchitectures(false);
     }
@@ -182,6 +197,7 @@ export default function Navbar({ onSimulationCompleted, onCompareCompleted }: Na
       } catch (error) {
         console.error("Error fetching selected architecture details:", error);
         setRunError("Unable to load components for this architecture.");
+        showToast("error", "Unable to load components for the selected architecture.");
         setComponentsForSelectedArchitecture([]);
         setSelectedTargetComponentId("");
         setSelectedCompareTargetComponentIdLeft("");
@@ -217,10 +233,12 @@ export default function Navbar({ onSimulationCompleted, onCompareCompleted }: Na
         selectedTargetComponentId,
       );
       onSimulationCompleted?.(data);
+      showToast("success", "Simulation completed successfully.");
       setModalMode(null);
     } catch (error) {
       console.error("Error running simulation:", error);
       setRunError(error instanceof Error ? error.message : "Simulation failed. Please try again.");
+      showToast("error", error instanceof Error ? error.message : "Simulation failed.");
     } finally {
       setIsRunningSimulation(false);
     }
@@ -259,10 +277,12 @@ export default function Navbar({ onSimulationCompleted, onCompareCompleted }: Na
         left,
         right,
       });
+      showToast("success", "Scenario comparison completed successfully.");
       setModalMode(null);
     } catch (error) {
       console.error("Error running compare simulation:", error);
       setRunError(error instanceof Error ? error.message : "Comparison failed. Please try again.");
+      showToast("error", error instanceof Error ? error.message : "Comparison failed.");
     } finally {
       setIsRunningSimulation(false);
     }
@@ -334,6 +354,7 @@ export default function Navbar({ onSimulationCompleted, onCompareCompleted }: Na
             onClick={() => handleOpenModal("compare")}
             disabled={isFetchingArchitectures || isRunningSimulation}
             className="inline-flex items-center gap-2 rounded-md border border-gray-700 bg-gray-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-gray-500 disabled:cursor-not-allowed disabled:bg-gray-800/70"
+            style={{ opacity: isFetchingArchitectures || isRunningSimulation ? 0.75 : 1 }}
           >
             {(isFetchingArchitectures || isRunningSimulation) && (
               <span
@@ -356,6 +377,7 @@ export default function Navbar({ onSimulationCompleted, onCompareCompleted }: Na
             onClick={() => handleOpenModal("run")}
             disabled={isFetchingArchitectures || isRunningSimulation}
             className="inline-flex items-center gap-2 rounded-md border border-emerald-700 bg-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-emerald-800/70"
+            style={{ opacity: isFetchingArchitectures || isRunningSimulation ? 0.75 : 1 }}
           >
             {(isFetchingArchitectures || isRunningSimulation) && (
               <span
@@ -376,6 +398,26 @@ export default function Navbar({ onSimulationCompleted, onCompareCompleted }: Na
         </div>
       </nav>
     </div>
+
+    {toast && (
+      <div
+        style={{
+          position: "fixed",
+          top: "20px",
+          right: "20px",
+          zIndex: 1100,
+          padding: "12px 16px",
+          borderRadius: "8px",
+          color: "white",
+          backgroundColor: toast.kind === "success" ? "rgba(16, 185, 129, 0.95)" : "rgba(239, 68, 68, 0.95)",
+          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.35)",
+          maxWidth: "320px",
+          fontSize: "14px",
+        }}
+      >
+        {toast.message}
+      </div>
+    )}
 
     {modalMode && (
       <div style={{
@@ -411,6 +453,7 @@ export default function Navbar({ onSimulationCompleted, onCompareCompleted }: Na
               const nextValue = e.target.value ? Number(e.target.value) : null;
               setSelectedArchitectureId(nextValue);
             }}
+            disabled={isFetchingArchitectures || isRunningSimulation}
             style={{
               width: "100%",
               padding: "10px",
@@ -421,6 +464,8 @@ export default function Navbar({ onSimulationCompleted, onCompareCompleted }: Na
               color: "white",
               fontSize: "14px",
               boxSizing: "border-box",
+              opacity: isFetchingArchitectures || isRunningSimulation ? 0.75 : 1,
+              cursor: isFetchingArchitectures || isRunningSimulation ? "not-allowed" : "pointer",
             }}
           >
             <option value="">Select a saved architecture...</option>
@@ -474,6 +519,8 @@ export default function Navbar({ onSimulationCompleted, onCompareCompleted }: Na
                     color: "white",
                     fontSize: "14px",
                     boxSizing: "border-box",
+                    opacity: !selectedArchitectureId || isFetchingComponents || componentsForSelectedArchitecture.length === 0 ? 0.75 : 1,
+                    cursor: !selectedArchitectureId || isFetchingComponents || componentsForSelectedArchitecture.length === 0 ? "not-allowed" : "pointer",
                   }}
                 >
                   <option value="">
@@ -534,6 +581,8 @@ export default function Navbar({ onSimulationCompleted, onCompareCompleted }: Na
                     color: "white",
                     fontSize: "14px",
                     boxSizing: "border-box",
+                    opacity: !selectedArchitectureId || isFetchingComponents || componentsForSelectedArchitecture.length === 0 ? 0.75 : 1,
+                    cursor: !selectedArchitectureId || isFetchingComponents || componentsForSelectedArchitecture.length === 0 ? "not-allowed" : "pointer",
                   }}
                 >
                   <option value="">
@@ -595,6 +644,8 @@ export default function Navbar({ onSimulationCompleted, onCompareCompleted }: Na
                   color: "white",
                   fontSize: "14px",
                   boxSizing: "border-box",
+                  opacity: !selectedArchitectureId || isFetchingComponents || componentsForSelectedArchitecture.length === 0 ? 0.75 : 1,
+                  cursor: !selectedArchitectureId || isFetchingComponents || componentsForSelectedArchitecture.length === 0 ? "not-allowed" : "pointer",
                 }}
               >
                 <option value="">
