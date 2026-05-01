@@ -74,6 +74,51 @@ ENVIRONMENT=development
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
+### Production Database Configuration (Render PostgreSQL)
+
+Use the External Database URL provided by Render in the PostgreSQL service dashboard.
+
+Expected format:
+
+```text
+postgresql://<username>:<password>@<hostname>:5432/<database_name>?sslmode=require
+```
+
+Example:
+
+```text
+DATABASE_URL=postgresql://mission_user:***@dpg-abc123-a.oregon-postgres.render.com:5432/mission_db?sslmode=require
+```
+
+Important:
+
+- Always include `sslmode=require` in production.
+- Do not hardcode secrets; set `DATABASE_URL` in Render environment variables.
+- Render PostgreSQL free tier has a 1 GB storage limit. Monitor row growth and JSONB-heavy tables.
+- Render free PostgreSQL instances expire after 90 days. Plan periodic reprovisioning and backup restore.
+
+### Backup and Restore (Render PostgreSQL)
+
+Create a backup using pg_dump:
+
+```bash
+pg_dump "$DATABASE_URL" --format=custom --compress=9 --file=mission_backup.dump
+```
+
+Restore from backup:
+
+```bash
+pg_restore --clean --if-exists --no-owner --no-privileges \
+	--dbname "$DATABASE_URL" mission_backup.dump
+```
+
+Plain SQL fallback:
+
+```bash
+pg_dump "$DATABASE_URL" --format=plain > mission_backup.sql
+psql "$DATABASE_URL" -f mission_backup.sql
+```
+
 ## Verify Installation
 
 Run the test suite:

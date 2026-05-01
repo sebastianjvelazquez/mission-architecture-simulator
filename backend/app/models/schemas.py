@@ -149,6 +149,8 @@ class ArchitectureResponse(BaseModel):
     id: int
     name: str
     description: Optional[str] = None
+    is_clone: bool = False
+    parent_id: Optional[int] = None
     properties: Optional[dict[str, Any]] = None
     created_at: datetime
     updated_at: datetime
@@ -163,8 +165,32 @@ class ArchitectureSummaryResponse(BaseModel):
     id: int
     name: str
     description: Optional[str] = None
+    is_clone: bool = False
+    parent_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
+
+
+class MitigationCreate(BaseModel):
+
+    type: str = Field(..., description="Mitigation category/type")
+    affected_component_id: Optional[int] = Field(
+        default=None,
+        description="Optional component DB id this mitigation targets",
+    )
+    description: str = Field(..., description="Human-readable mitigation recommendation")
+
+
+class MitigationResponse(BaseModel):
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    architecture_id: int
+    type: str
+    affected_component_id: Optional[int] = None
+    description: str
+    created_at: datetime
 
 
 class ScenarioCreate(BaseModel):
@@ -243,6 +269,8 @@ __all__ = [
     "ArchitectureUpdate",
     "ArchitectureResponse",
     "ArchitectureSummaryResponse",
+    "MitigationCreate",
+    "MitigationResponse",
     "ScenarioCreate",
     "ScenarioResponse",
     "SimulationResultCreate",

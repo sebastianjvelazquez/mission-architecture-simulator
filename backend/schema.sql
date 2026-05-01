@@ -1,9 +1,10 @@
 -- ============================================================================
 -- MISSION SYSTEM SECURITY ARCHITECTURE SIMULATOR - DATABASE SCHEMA
 -- ============================================================================
--- Version: 1.0.0 (Increment 1)
+-- Version: 3.0.0 (Increment 3)
 -- PostgreSQL 15+
--- Purpose: Store mission architectures, components, and flows for simulation
+-- Purpose: Store architectures, clone lineage, scenarios, simulation results,
+--          and mitigation suggestions for production deployment.
 -- ============================================================================
 
 -- ============================================================================
@@ -16,6 +17,7 @@
 
 DROP TABLE IF EXISTS simulation_results CASCADE;
 DROP TABLE IF EXISTS scenarios CASCADE;
+DROP TABLE IF EXISTS mitigations CASCADE;
 DROP TABLE IF EXISTS flows CASCADE;
 DROP TABLE IF EXISTS components CASCADE;
 DROP TABLE IF EXISTS architectures CASCADE;
@@ -31,6 +33,8 @@ CREATE TABLE architectures (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
+    is_clone BOOLEAN NOT NULL DEFAULT FALSE,
+    parent_id INTEGER REFERENCES architectures(id) ON DELETE SET NULL,
 
     -- Flexible properties (JSONB for future extensibility)
     properties JSONB DEFAULT '{}'::jsonb,
@@ -47,7 +51,9 @@ CREATE TABLE architectures (
 );
 
 -- Indexes for architectures
+CREATE INDEX idx_architectures_name ON architectures(name);
 CREATE INDEX idx_architectures_created_at ON architectures(created_at DESC);
+CREATE INDEX idx_architectures_parent_id ON architectures(parent_id);
 -- CREATE INDEX idx_architectures_user_id ON architectures(user_id); -- Uncomment when users added
 
 
@@ -89,6 +95,7 @@ CREATE TABLE components (
 
 -- Indexes for components
 CREATE INDEX idx_components_architecture_id ON components(architecture_id);
+CREATE INDEX idx_components_component_id ON components(component_id);
 CREATE INDEX idx_components_type ON components(component_type);
 CREATE INDEX idx_components_created_at ON components(created_at DESC);
 
@@ -112,7 +119,6 @@ CREATE TABLE flows (
     target_component_id INTEGER NOT NULL REFERENCES components(id) ON DELETE CASCADE,
     
     -- Flow attributes
-    flow_type VARCHAR(50) DEFAULT 'data', -- data, control, power, etc.
     data_type VARCHAR(100),
     cia_requirement VARCHAR(50),
     latency_sensitivity VARCHAR(20),
@@ -126,21 +132,40 @@ CREATE TABLE flows (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     
     -- Constraints
-    CONSTRAINT no_self_loops CHECK (source_component_id != target_component_id),
-    CONSTRAINT valid_flow_type CHECK (char_length(flow_type) > 0)
+    CONSTRAINT no_self_loops CHECK (source_component_id != target_component_id)
 );
 
 -- Indexes for flows
 CREATE INDEX idx_flows_architecture_id ON flows(architecture_id);
 CREATE INDEX idx_flows_source_component_id ON flows(source_component_id);
 CREATE INDEX idx_flows_target_component_id ON flows(target_component_id);
-CREATE INDEX idx_flows_type ON flows(flow_type);
 
 -- Composite index for graph traversal queries
 CREATE INDEX idx_flows_source_target ON flows(source_component_id, target_component_id);
 
 -- GIN index for JSONB property queries
 CREATE INDEX idx_flows_properties ON flows USING GIN (properties);
+
+
+-- ============================================================================
+-- TABLE: mitigations
+-- ============================================================================
+-- Description: Persisted mitigation suggestions linked to an architecture.
+-- ============================================================================
+
+CREATE TABLE mitigations (
+    id SERIAL PRIMARY KEY,
+    architecture_id INTEGER NOT NULL REFERENCES architectures(id) ON DELETE CASCADE,
+    type VARCHAR(100) NOT NULL,
+    affected_component_id INTEGER REFERENCES components(id) ON DELETE SET NULL,
+    description TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for mitigations
+CREATE INDEX idx_mitigations_architecture_id ON mitigations(architecture_id);
+CREATE INDEX idx_mitigations_type ON mitigations(type);
+CREATE INDEX idx_mitigations_affected_component_id ON mitigations(affected_component_id);
 
 
 -- ============================================================================
@@ -241,11 +266,11 @@ INSERT INTO components (architecture_id, name, component_type, properties, posit
 (1, 'Ground Control Station', 'control', '{"confidentiality": 5, "integrity": 5, "availability": 5}', 700, 150);
 
 -- Sample Flows
-INSERT INTO flows (architecture_id, source_component_id, target_component_id, flow_type, properties) VALUES
-(1, 1, 3, 'data', '{"bandwidth_mbps": 50, "protocol": "internal"}'),
-(1, 2, 3, 'data', '{"bandwidth_mbps": 1, "protocol": "NMEA"}'),
-(1, 3, 4, 'data', '{"bandwidth_mbps": 10, "protocol": "encrypted"}'),
-(1, 4, 5, 'data', '{"bandwidth_mbps": 10, "protocol": "AES-256"}'),
+INSERT INTO flows (architecture_id, source_component_id, target_component_id, data_type, properties) VALUES
+(1, 1, 3, 'telemetry', '{"bandwidth_mbps": 50, "protocol": "internal"}'),
+(1, 2, 3, 'navigation', '{"bandwidth_mbps": 1, "protocol": "NMEA"}'),
+(1, 3, 4, 'commands', '{"bandwidth_mbps": 10, "protocol": "encrypted"}'),
+(1, 4, 5, 'video', '{"bandwidth_mbps": 10, "protocol": "AES-256"}'),
 (1, 5, 4, 'control', '{"bandwidth_mbps": 1, "protocol": "command"}');
 */
 

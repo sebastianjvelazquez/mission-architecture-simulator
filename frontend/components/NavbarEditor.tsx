@@ -7,10 +7,36 @@ import Link from "next/dist/client/link";
 import { Node, Edge, MarkerType } from "reactflow";
 
 const inter = Inter({ weight: "500", subsets: ['latin'] });
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(
+  /\/$/,
+  "",
+);
 
 type ArchitectureSummary = {
   id: number;
   name: string;
+};
+type ArchitecturePayload = {
+  name: string;
+  description: string;
+  properties: Record<string, unknown>;
+  components: Array<{
+    component_id: string;
+    name: string;
+    component_type: string;
+    criticality: number;
+    position_x: number;
+    position_y: number;
+  }>;
+  flows: Array<{
+    source_component_id: string;
+    target_component_id: string;
+    data_type: string;
+    cia_requirement: string;
+    latency_sensitivity: string;
+    source_handle: string;
+    target_handle: string;
+  }>;
 };
 
 type LoadedArchitecture = {
@@ -32,9 +58,6 @@ type LoadedArchitecture = {
     data_type: string | null;
     cia_requirement: string | null;
     latency_sensitivity: string | null;
-    // NEED TO ADD THESE FIELDS TO DB AND BACKEND TO TRACK HANDLE IDS FOR REACT FLOW CONNECTIONS
-    // THIS WILL BE TOP PRIORITY FOR NOW AS WITHOUT THIS CANNOT LOAD MODELS WITH PRECISION, IF ACCEPTABLE CAN DEFAULT TO SAME LOGIC BUT NEED TO MAKE SURE
-    // ADDITIONALLY NEED TO MAKE SURE THESE VARIABLES ARE UPDATED ACCORDINGLY THROUGHOUT BOTH EDITOR AND DASHBOARD NAVBARS FOR SAVING AND LOADING
     source_handle: string | null;
     target_handle: string | null;
   }>;
@@ -53,68 +76,217 @@ export default function Navbar({ nodes, edges, setNodes, setEdges}: {
   const [isLoading, setIsLoading] = useState(false);
   const [architectureList, setArchitectureList] = useState<ArchitectureSummary[]>([]);
   const [selectedArchitectureId, setSelectedArchitectureId] = useState<number | null>(null);
+  const [currentArchitectureId, setCurrentArchitectureId] = useState<number | null>(null);
+  const [currentArchitectureName, setCurrentArchitectureName] = useState("Architecture");
+  const [toast, setToast] = useState<{ kind: "success" | "error"; message: string } | null>(null);
 
+  const isMitigationComponentType = (componentType?: string | null) =>
+    componentType === "Redundancy" || componentType === "ValidationGate" || componentType === "SegmentationBoundary";
 
-  const handleSave = async () => {
-    setIsLoading(true);
-
-    // LOGIC OF SAVING MODEL
-    const payload = {
-      name: modelName, // TAKES FROM INPUT FIELD
-      description: "",
-      components: nodes.map(node => ({
-        component_id: node.id,
-        name: node.data.label,
-        component_type: node.type,
-        criticality: node.data.criticality || 1,
-        position_x: node.position.x,
-        position_y: node.position.y,
-      })),
-      flows: edges.map(edge => ({
-        source_component_id: edge.source,
-        target_component_id: edge.target,
-        data_type: edge.data?.dataTypeEdge || "",
-        cia_requirement: edge.data?.ciaRequirement || "",
-        latency_sensitivity: edge.data?.latencySensitivity || "",
-        source_handle: edge.sourceHandle || "right",
-        target_handle: edge.targetHandle || "left",
-      })),
+  const getEdgeStyle = (sourceType?: string | null, targetType?: string | null) => {
+    if (isMitigationComponentType(sourceType) || isMitigationComponentType(targetType)) {
+      return {
+        stroke: "#38bdf8",
+        strokeWidth: 2,
+        strokeDasharray: "6 4",
+      };
     }
 
-    // INTERACTING WITH BACKEND
+    return {
+      stroke: "#fff",
+      strokeWidth: 2,
+    };
+  };
+
+  const showToast = (kind: "success" | "error", message: string) => {
+    setToast({ kind, message });
+  };
+
+  React.useEffect(() => {
+    if (!toast) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => setToast(null), 2600);
+    return () => window.clearTimeout(timeout);
+  }, [toast]);
+
+  const buildPayload = (name: string): ArchitecturePayload => ({
+    name,
+    description: "",
+    properties: {},
+    components: nodes.map((node) => ({
+      component_id: node.id,
+      name: String(node.data?.label ?? node.id),
+      component_type: node.type ?? "Compute",
+      criticality: Number(node.data?.criticality ?? 1),
+      position_x: node.position.x,
+      position_y: node.position.y,
+    })),
+    flows: edges.map((edge) => ({
+      source_component_id: edge.source ?? "",
+      target_component_id: edge.target ?? "",
+      data_type: String(edge.data?.dataTypeEdge ?? ""),
+      cia_requirement: String(edge.data?.ciaRequirement ?? ""),
+      latency_sensitivity: String(edge.data?.latencySensitivity ?? ""),
+      source_handle: edge.sourceHandle ?? "right",
+      target_handle: edge.targetHandle ?? "left",
+    })),
+  });
+
+  const applyArchitectureToCanvas = (architecture: LoadedArchitecture) => {
+    const componentTypeLookup = new Map<number, string>();
+    for (const component of architecture.components) {
+      componentTypeLookup.set(component.id, component.component_type);
+    }
+
+    const dbIdToFrontendId = new Map<number, string>();
+    for (const component of architecture.components) {
+      dbIdToFrontendId.set(component.id, component.component_id);
+    }
+
+    const loadedNodes: Node[] = architecture.components.map((component) => ({
+      id: component.component_id,
+      type: component.component_type,
+      position: {
+        x: component.position_x ?? 0,
+        y: component.position_y ?? 0,
+      },
+      data: {
+        label: component.name,
+        criticality: component.criticality,
+        variant:
+          component.component_type === "ValidationGate"
+            ? "validation_gate"
+            : component.component_type === "SegmentationBoundary"
+              ? "segmentation_boundary"
+              : component.component_type === "Redundancy"
+                ? "redundancy"
+                : undefined,
+      },
+    }));
+
+    const loadedEdges: Edge[] = architecture.flows
+      .map((flow) => {
+        const source = dbIdToFrontendId.get(flow.source_component_id);
+        const target = dbIdToFrontendId.get(flow.target_component_id);
+
+        if (!source || !target) {
+          return null;
+        }
+
+        return {
+          id: `e-${flow.id}`,
+          source,
+          target,
+          sourceHandle: flow.source_handle ?? 'right',
+          targetHandle: flow.target_handle ?? 'left',
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: isMitigationComponentType(componentTypeLookup.get(flow.source_component_id)) || isMitigationComponentType(componentTypeLookup.get(flow.target_component_id)) ? '#38bdf8' : '#fff',
+          },
+          style: getEdgeStyle(componentTypeLookup.get(flow.source_component_id), componentTypeLookup.get(flow.target_component_id)),
+          label: flow.data_type ?? '',
+          labelStyle: { fill: '#fff', fontWeight: 500 },
+          labelBgStyle: { fill: '#141414' },
+          data: {
+            dataTypeEdge: flow.data_type ?? '',
+            ciaRequirement: flow.cia_requirement ?? '',
+            latencySensitivity: flow.latency_sensitivity ?? '',
+          },
+        } as Edge;
+      })
+      .filter((edge): edge is Edge => edge !== null);
+
+    setNodes(loadedNodes);
+    setEdges(loadedEdges);
+    setCurrentArchitectureId(architecture.id);
+    setCurrentArchitectureName(architecture.name);
+    setModelName(architecture.name);
+  };
+
+  const persistArchitecture = async (name: string) => {
+    setIsLoading(true);
+
     try {
-      const response = await fetch('http://localhost:8000/architectures', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const payload = buildPayload(name);
+      const shouldUpdate = Boolean(currentArchitectureId);
+      const response = await fetch(
+        shouldUpdate ? `${API_BASE_URL}/architectures/${currentArchitectureId}` : `${API_BASE_URL}/architectures`,
+        {
+          method: shouldUpdate ? "PUT" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
         },
-        body: JSON.stringify(payload),
-      });
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to save architecture');
+        const errorBody = await response.json().catch(() => null);
+        throw new Error(errorBody?.detail || (shouldUpdate ? "Failed to update architecture" : "Failed to save architecture"));
       }
 
       const data = await response.json();
-      console.log('Saved Successfully. Architecture ID:', data.id);
-
-      alert('Model Saved Successfully!');
+      setCurrentArchitectureId(data.id);
+      setCurrentArchitectureName(data.name);
+      setModelName(data.name);
+      showToast("success", `Saved as ${data.name}.`);
+      return data as LoadedArchitecture;
     } catch (error) {
-      console.error('Error saving architecture:', error);
-      alert('Failed to save model. Please try again.');
+      console.error("Error saving architecture:", error);
+      showToast("error", error instanceof Error ? error.message : "Failed to save architecture.");
+      throw error;
     } finally {
       setIsLoading(false);
-      setShowSaveModal(false);
-      setModelName("");
+    }
+  };
+
+
+  const handleSave = async () => {
+    const nextName = modelName.trim();
+    if (!nextName) {
+      showToast("error", "Please enter a model name.");
+      return;
     }
 
+    await persistArchitecture(nextName);
+    setShowSaveModal(false);
+  };
+
+  const handleCloneArchitecture = async () => {
+    if (!currentArchitectureId) {
+      showToast("error", "Load or save an architecture before cloning.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/architectures/${currentArchitectureId}/clone`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => null);
+        throw new Error(errorBody?.detail || "Failed to clone architecture.");
+      }
+
+      const architecture: LoadedArchitecture = await response.json();
+      applyArchitectureToCanvas(architecture);
+      showToast("success", `Cloned as ${architecture.name}.`);
+    } catch (error) {
+      console.error("Error cloning architecture:", error);
+      showToast("error", error instanceof Error ? error.message : "Failed to clone architecture.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleLoad = async () => {
     setIsLoading(true);
 
     try{
-      const response = await fetch('http://localhost:8000/architectures');
+      const response = await fetch(`${API_BASE_URL}/architectures`);
       if (!response.ok) {
         throw new Error('Failed to fetch architecture list');
       }
@@ -125,7 +297,7 @@ export default function Navbar({ nodes, edges, setNodes, setEdges}: {
       setShowLoadModal(true);
     } catch (error) {
       console.error('Error fetching architectures:', error);
-      alert('Failed to fetch architectures. Please try again.');
+      showToast('error', 'Unable to load saved architectures. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -133,79 +305,27 @@ export default function Navbar({ nodes, edges, setNodes, setEdges}: {
 
   const handleLoadSelectedArchitecture = async () => {
     if (!selectedArchitectureId) {
-      alert('Please select an architecture to load.');
+      showToast('error', 'Please select an architecture to load.');
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:8000/architectures/${selectedArchitectureId}`);
+      const response = await fetch(
+        `${API_BASE_URL}/architectures/${selectedArchitectureId}`
+      );
       if (!response.ok) {
         throw new Error('Failed to fetch selected architecture');
       }
 
       const architecture: LoadedArchitecture = await response.json();
-
-      const dbIdToFrontendId = new Map<number, string>();
-      for (const component of architecture.components) {
-        dbIdToFrontendId.set(component.id, component.component_id);
-      }
-
-      const loadedNodes: Node[] = architecture.components.map((component) => ({
-        id: component.component_id,
-        type: component.component_type,
-        position: {
-          x: component.position_x ?? 0,
-          y: component.position_y ?? 0,
-        },
-        data: {
-          label: component.name,
-          criticality: component.criticality,
-        },
-      }));
-
-      const loadedEdges: Edge[] = architecture.flows
-        .map((flow) => {
-          const source = dbIdToFrontendId.get(flow.source_component_id);
-          const target = dbIdToFrontendId.get(flow.target_component_id);
-
-          if (!source || !target) {
-            return null;
-          }
-
-          return {
-            id: `e-${flow.id}`,
-            source,
-            target,
-            sourceHandle: flow.source_handle ?? 'right',
-            targetHandle: flow.target_handle ?? 'left',
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-              color: '#fff',
-            },
-            style: {
-              stroke: '#fff',
-              strokeWidth: 2,
-            },
-            label: flow.data_type ?? '',
-            labelStyle: { fill: '#fff', fontWeight: 500 },
-            labelBgStyle: { fill: '#141414' },
-            data: {
-              dataTypeEdge: flow.data_type ?? '',
-              ciaRequirement: flow.cia_requirement ?? '',
-              latencySensitivity: flow.latency_sensitivity ?? '',
-            },
-          } as Edge;
-        })
-        .filter((edge): edge is Edge => edge !== null);
-
-      setNodes(loadedNodes);
-      setEdges(loadedEdges);
+      applyArchitectureToCanvas(architecture);
       setShowLoadModal(false);
       setSelectedArchitectureId(null);
+      showToast("success", `Loaded ${architecture.name}.`);
     } catch (error) {
       console.error('Error loading selected architecture:', error);
-      alert('Failed to load selected architecture. Please try again.');
+      showToast('error', 'Failed to load selected architecture. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -266,16 +386,18 @@ export default function Navbar({ nodes, edges, setNodes, setEdges}: {
               <button
                 id="load-button"
                 onClick={handleLoad}
+                disabled={isLoading}
                 style={{
                   padding: "10px 16px",
                   backgroundColor: "transparent",
                   color: "white",
                   border: "none",
                   borderRadius: "4px",
-                  cursor: "pointer",
+                  cursor: isLoading ? "not-allowed" : "pointer",
                   display: "flex",
                   alignItems: "center",
                   gap: "8px", 
+                  opacity: isLoading ? 0.75 : 1,
                 }}
               >
                 {isLoading && (
@@ -298,20 +420,47 @@ export default function Navbar({ nodes, edges, setNodes, setEdges}: {
             <li>
               <button 
                 id="save-button"
-                onClick={() => setShowSaveModal(true)}
+                disabled={isLoading}
+                onClick={() => {
+                  setModelName(currentArchitectureName);
+                  setShowSaveModal(true);
+                }}
                 style={{
                   padding: "10px 16px",
                   backgroundColor: "transparent",
                   color: "white",
                   border: "none",
                   borderRadius: "4px",
-                  cursor: "pointer",
+                  cursor: isLoading ? "not-allowed" : "pointer",
                   display: "flex",
                   alignItems: "center",
                   gap: "8px",
+                  opacity: isLoading ? 0.75 : 1,
                 }}
               > 
                 <h3 style={{margin: "0", fontSize: "16px"}}>Save</h3>
+              </button>
+            </li>
+            <li>
+              <button
+                id="clone-button"
+                onClick={handleCloneArchitecture}
+                disabled={isLoading || !currentArchitectureId}
+                style={{
+                  padding: "10px 16px",
+                  backgroundColor: "transparent",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: isLoading || !currentArchitectureId ? "not-allowed" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  opacity: isLoading || !currentArchitectureId ? 0.7 : 1,
+                }}
+                title={currentArchitectureId ? "Clone the currently loaded architecture" : "Load or save an architecture before cloning"}
+              >
+                <h3 style={{margin: "0", fontSize: "16px"}}>Clone Architecture</h3>
               </button>
             </li>
             <li>
@@ -336,6 +485,26 @@ export default function Navbar({ nodes, edges, setNodes, setEdges}: {
         </div>
       </nav>
     </div>
+
+    {toast && (
+      <div
+        style={{
+          position: "fixed",
+          top: "20px",
+          right: "20px",
+          zIndex: 1100,
+          padding: "12px 16px",
+          borderRadius: "8px",
+          color: "white",
+          backgroundColor: toast.kind === "success" ? "rgba(16, 185, 129, 0.95)" : "rgba(239, 68, 68, 0.95)",
+          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.35)",
+          maxWidth: "320px",
+          fontSize: "14px",
+        }}
+      >
+        {toast.message}
+      </div>
+    )}
 
     {/* SAVE MODAL DESIGN CODE */}
     {showSaveModal && (
@@ -395,14 +564,14 @@ export default function Navbar({ nodes, edges, setNodes, setEdges}: {
             </button>
             <button
               onClick={handleSave}
-              disabled={!modelName.trim()}
+              disabled={!modelName.trim() || isLoading}
               style={{
                 padding: "10px 20px",
-                backgroundColor: modelName.trim() ? "#0070f3" : "#555",
+                backgroundColor: modelName.trim() && !isLoading ? "#0070f3" : "#555",
                 color: "white",
                 border: "none",
                 borderRadius: "4px",
-                cursor: modelName.trim() ? "pointer" : "not-allowed",
+                cursor: modelName.trim() && !isLoading ? "pointer" : "not-allowed",
               }}
             >
               Save
@@ -490,14 +659,14 @@ export default function Navbar({ nodes, edges, setNodes, setEdges}: {
             </button>
             <button
               onClick={handleLoadSelectedArchitecture}
-              disabled={!selectedArchitectureId}
+              disabled={!selectedArchitectureId || isLoading}
               style={{
                 padding: "10px 20px",
-                backgroundColor: selectedArchitectureId ? "#0070f3" : "#555",
+                backgroundColor: selectedArchitectureId && !isLoading ? "#0070f3" : "#555",
                 color: "white",
                 border: "none",
                 borderRadius: "4px",
-                cursor: selectedArchitectureId ? "pointer" : "not-allowed",
+                cursor: selectedArchitectureId && !isLoading ? "pointer" : "not-allowed",
               }}
             >
               Load
