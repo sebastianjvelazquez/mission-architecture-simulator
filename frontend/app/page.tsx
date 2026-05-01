@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useCallback, useRef, useState } from "react";
-import Image from "next/image";
 import ReactFlow, {
   Background,
   Controls,
@@ -34,12 +33,6 @@ const mitigationNodeTypeToVariant: Record<string, MitigationKind> = {
   ValidationGate: "validation_gate",
   SegmentationBoundary: "segmentation_boundary",
 };
-
-const mitigationVariants: Array<{ type: string; label: string; variant: MitigationKind }> = [
-  { type: "Redundancy", label: "Redundancy Node", variant: "redundancy" },
-  { type: "ValidationGate", label: "Validation Gate", variant: "validation_gate" },
-  { type: "SegmentationBoundary", label: "Segmentation Boundary", variant: "segmentation_boundary" },
-];
 
 const isMitigationNodeType = (type?: string) => Boolean(type && mitigationNodeTypeToVariant[type]);
 
@@ -599,11 +592,6 @@ export default function Home() {
     setIsModalOpen(false);
     setSelectedNode(null);
   }, [selectedNode]);
-
-  const onDragStart = useCallback((event: React.DragEvent, type: string) => {
-    event.dataTransfer.setData("application/reactflow", type);
-    event.dataTransfer.effectAllowed = "move";
-  }, []);
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
