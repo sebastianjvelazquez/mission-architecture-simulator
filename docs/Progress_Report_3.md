@@ -37,7 +37,7 @@ The primary goals were:
 | Implementation & Testing Document v3 | #94 | ✅ Done (`docs/IT_v3.md`) |
 | Deploy Frontend to Vercel | #95 | 🔄 In Progress |
 | End-to-End Testing on Live Deployment | #96 | 🔄 Pending live deployment |
-| Demo Video & Progress Report Increment 3 | #97 | 🔄 Video pending |
+| Demo Video & Progress Report Increment 3 | #97 | ✅ Done |
 | Final Deliverables Submission | #98 | 🔄 Pending Canvas submission |
 
 ### Backend (William Ohonba — weo24)
@@ -139,10 +139,7 @@ to real tests when Person 2 merges those endpoints.
 
 ## 7. Demo Video
 
-> **Note:** The demo video will be recorded after live deployment is confirmed working.
-> The link will be added here and on Canvas before the deadline.
-
-**Demo Video Link:** _TBD_
+**Demo Video Link:** [https://youtu.be/gMlu0X0HnO0](https://youtu.be/gMlu0X0HnO0)
 
 **Planned demo flow:**
 1. Show live frontend URL in browser

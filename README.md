@@ -747,9 +747,10 @@ All team members:
   - Video link
   - GitHub link
   - **🌐 LIVE DEPLOYMENT URLS:**
-    - Frontend URL: https://your-project.vercel.app
-    - Backend API URL: https://your-project.onrender.com
-    - API Docs: https://your-project.onrender.com/docs
+    - Frontend URL: https://mission-architecture-simulator-ynfm.vercel.app
+    - Backend API URL: https://mission-architecture-simulator.onrender.com
+    - API Docs: https://mission-architecture-simulator.onrender.com/docs
+    - Demo Video: https://youtu.be/gMlu0X0HnO0
 
 **Then (after Apr 27):**
 - [ ] **LIVE CLASS PRESENTATION (5-7 min demo)**
@@ -1892,9 +1893,10 @@ REQ-003 | Save Architecture | FEAT-003 | test_save | ✓
 **Deployment Guide (REQUIRED - CRITICAL)**
 
 - **Live Deployment URLs:**
-  - Frontend: https://your-project.vercel.app
-  - Backend API: https://your-project.onrender.com
-  - API Docs: https://your-project.onrender.com/docs
+  - Frontend: https://mission-architecture-simulator-ynfm.vercel.app
+  - Backend API: https://mission-architecture-simulator.onrender.com
+  - API Docs: https://mission-architecture-simulator.onrender.com/docs
+  - Demo Video: https://youtu.be/gMlu0X0HnO0
 - Complete Vercel setup instructions
 - Complete Render setup instructions
 - PostgreSQL configuration on Render
@@ -1978,10 +1980,10 @@ Solutions: Code review, extensive testing, documentation, proper CORS setup
 This project taught us how to think about mission assurance."
 
 6:30-7:00 – CLOSING
-"Full code on GitHub: [link]
+"Full code on GitHub: https://github.com/sebastianjvelazquez/mission-architecture-simulator
  🌐 LIVE DEPLOYMENT:
-   - Frontend: https://your-project.vercel.app
-   - Backend API: https://your-project.onrender.com/docs
+   - Frontend: https://mission-architecture-simulator-ynfm.vercel.app
+   - Backend API: https://mission-architecture-simulator.onrender.com/docs
  Thanks for watching."
 ```
 
@@ -2418,11 +2420,13 @@ Add this section to your project README:
 ```markdown
 ## 🌐 Live Deployment
 
-**Frontend (Vercel):** https://your-project.vercel.app
+**Frontend (Vercel):** https://mission-architecture-simulator-ynfm.vercel.app
 
-**Backend API (Render):** https://your-project.onrender.com
+**Backend API (Render):** https://mission-architecture-simulator.onrender.com
 
-**API Documentation:** https://your-project.onrender.com/docs
+**API Documentation:** https://mission-architecture-simulator.onrender.com/docs
+
+**Demo Video (Increment 3):** https://youtu.be/gMlu0X0HnO0
 
 ### Note on Cold Starts
 The backend uses Render's free tier, which may sleep after 15 minutes of inactivity.
