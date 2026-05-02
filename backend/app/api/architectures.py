@@ -309,7 +309,10 @@ def list_architectures(
 )
 def compare_architectures(
     baseline_id: int = Query(..., description="ID of the baseline architecture"),
-    mitigated_id: int = Query(..., description="ID of the mitigated architecture to compare against"),
+    mitigated_id: int = Query(
+        ...,
+        description="ID of the mitigated architecture to compare against",
+    ),
     db: Session = Depends(get_db),
 ) -> CompareResponse:
     """Compare two architectures using a weighted criticality score.

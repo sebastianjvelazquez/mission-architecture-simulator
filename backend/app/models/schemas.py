@@ -248,15 +248,28 @@ class CompareResponse(BaseModel):
     """Response schema for GET /architectures/compare."""
 
     baseline_id: int = Field(..., description="ID of the baseline architecture")
-    mitigated_id: int = Field(..., description="ID of the mitigated (comparison) architecture")
-    baseline_score: float = Field(..., description="Structural mission score of the baseline (0-100)")
-    mitigated_score: float = Field(..., description="Structural mission score of the mitigated architecture (0-100)")
+    mitigated_id: int = Field(
+        ...,
+        description="ID of the mitigated (comparison) architecture",
+    )
+    baseline_score: float = Field(
+        ...,
+        description="Structural mission score of the baseline (0-100)",
+    )
+    mitigated_score: float = Field(
+        ...,
+        description="Structural mission score of the mitigated architecture (0-100)",
+    )
     delta_mission_score: float = Field(
-        ..., description="Score improvement: mitigated_score - baseline_score (positive = improvement)"
+        ...,
+        description="Score improvement: mitigated_score - baseline_score (positive = improvement)",
     )
     score_delta: float = Field(..., description="Alias for delta_mission_score")
     baseline_component_count: int = Field(..., description="Number of components in baseline")
-    mitigated_component_count: int = Field(..., description="Number of components in mitigated architecture")
+    mitigated_component_count: int = Field(
+        ...,
+        description="Number of components in mitigated architecture",
+    )
     summary: str = Field(..., description="Human-readable comparison summary")
 
 
