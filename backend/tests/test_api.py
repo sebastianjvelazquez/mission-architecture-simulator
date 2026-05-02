@@ -20,9 +20,18 @@ from __future__ import annotations
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, event
+from sqlalchemy.dialects.sqlite.base import SQLiteTypeCompiler
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from app.core.config import Settings, get_settings
+from app.database import get_db
 from app.main import app, _parse_allowed_origins
+from app.models.architecture import Architecture, Base, Component, Flow
+
+# SQLite does not support JSONB natively. Compile JSONB as JSON for tests.
+SQLiteTypeCompiler.visit_JSONB = SQLiteTypeCompiler.visit_JSON  # type: ignore[attr-defined]
 
 
 # Override get_settings() for the entire test session so tests never read
@@ -54,7 +63,97 @@ def override_settings():
 # a real browser or curl command, but entirely in-memory.
 @pytest.fixture
 def client():
-    return TestClient(app)
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+
+    @event.listens_for(engine, "connect")
+    def _set_fk_pragma(dbapi_conn, _):
+        dbapi_conn.execute("PRAGMA foreign_keys=ON")
+
+    Base.metadata.create_all(engine)
+    SessionFactory = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+    session = SessionFactory()
+
+    _seed_simulation_architecture(session)
+
+    def _override_get_db():
+        yield session
+
+    app.dependency_overrides[get_db] = _override_get_db
+    try:
+        yield TestClient(app)
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+        session.close()
+        Base.metadata.drop_all(engine)
+        engine.dispose()
+
+
+def _seed_simulation_architecture(db: Session) -> None:
+    arch = Architecture(
+        id=1,
+        name="Stub Architecture",
+        description="Seeded simulation architecture",
+        properties={},
+    )
+    db.add(arch)
+    db.flush()
+
+    sensor = Component(
+        architecture_id=arch.id,
+        component_id="sensor-1",
+        name="Sensor-1",
+        component_type="Sensor",
+        criticality=7,
+        position_x=100,
+        position_y=100,
+        properties={},
+    )
+    compute = Component(
+        architecture_id=arch.id,
+        component_id="compute-1",
+        name="Compute-1",
+        component_type="Compute",
+        criticality=8,
+        position_x=300,
+        position_y=100,
+        properties={},
+    )
+    control = Component(
+        architecture_id=arch.id,
+        component_id="control-1",
+        name="Control-1",
+        component_type="Control",
+        criticality=9,
+        position_x=500,
+        position_y=100,
+        properties={},
+    )
+    db.add_all([sensor, compute, control])
+    db.flush()
+
+    db.add_all(
+        [
+            Flow(
+                architecture_id=arch.id,
+                source_component_id=sensor.id,
+                target_component_id=compute.id,
+                cia_requirement="integrity",
+                properties={},
+            ),
+            Flow(
+                architecture_id=arch.id,
+                source_component_id=compute.id,
+                target_component_id=control.id,
+                cia_requirement="availability",
+                properties={},
+            ),
+        ]
+    )
+    db.commit()
 
 
 # Tests for the _parse_allowed_origins helper in main.py.
@@ -256,3 +355,30 @@ class TestSimulateEndpoint:
         # confirm the result belongs to the architecture it requested.
         r = client.post(f"{self.BASE}?scenario_type=node_compromise&target_component_id=sensor-1")
         assert r.json()["architecture_id"] == 1
+
+    def test_uuid_component_id_from_saved_architecture_returns_200(self, client):
+        # Saved architectures use frontend-generated component_id strings.
+        uuid_component_id = "b5c1555f-0491-4b77-8a0b-6494dbd6abde"
+        payload = {
+            "name": "UUID Architecture",
+            "components": [
+                {
+                    "component_id": uuid_component_id,
+                    "name": "Radar Sensor",
+                    "component_type": "Sensor",
+                    "criticality": 8,
+                },
+            ],
+            "flows": [],
+        }
+        create_response = client.post("/architectures", json=payload)
+        assert create_response.status_code == 201
+        architecture_id = create_response.json()["id"]
+
+        r = client.post(
+            f"/architectures/{architecture_id}/simulate"
+            f"?scenario_type=node_compromise&target_component_id={uuid_component_id}"
+        )
+
+        assert r.status_code == 200
+        assert r.json()["target_component_id"] == uuid_component_id

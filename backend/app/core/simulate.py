@@ -25,14 +25,18 @@ from __future__ import annotations
 import logging
 
 # APIRouter lets us define routes in a separate file and register them in main.py.
-# Depends is FastAPI's dependency injection system (used for settings here).
+# Depends is FastAPI's dependency injection system (used for settings and DB here).
 # HTTPException converts Python exceptions into HTTP error responses.
 # Query declares a URL query parameter with validation and Swagger docs.
 # status gives named constants like status.HTTP_422_UNPROCESSABLE_ENTITY.
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import Settings, get_settings
 from app.models.schemas import ArchitectureSchema, SimulationResultSchema
+from app.database import get_db
+from app.models.architecture import Architecture
 from app.services.simulator import MissionArchitectureSimulator, SimulatorError
 
 # Module-level logger. Log messages will appear in the terminal when running
@@ -44,74 +48,72 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/architectures", tags=["Simulations"])
 
 
-# STUB FUNCTION (Increment 1 only)
-# In Increment 2, Person 3 replaces this with a real SQLAlchemy DB lookup.
-# The stub exists so the endpoint is fully functional and testable before
-# the database layer is integrated.
-def _get_architecture_stub(architecture_id: int) -> ArchitectureSchema:
+def _architecture_to_schema(architecture: Architecture) -> ArchitectureSchema:
     """
-    Return a hardcoded 3-node architecture for development and testing.
+    Convert a persisted architecture into the graph schema used by the simulator.
 
-    This simulates what the database query will eventually return:
-    a fully populated ArchitectureSchema with components and data flows.
-
-    The graph looks like this:
-        Sensor-1  -->  Compute-1  -->  Control-1
-    So compromising Sensor-1 will propagate to all three nodes.
-
-    Person 3 replaces this entire function with something like:
-        arch_row = db.query(ArchitectureORM).filter_by(id=architecture_id).first()
-        if not arch_row:
-            raise HTTPException(status_code=404, ...)
-        return arch_row.to_schema()
+    Database flows store component foreign keys as integer IDs, while the
+    simulator and frontend use the stable frontend-generated component_id
+    strings. This translation keeps simulation inputs aligned with what the
+    dashboard sends in target_component_id.
     """
-    # Each component dict is validated by Pydantic against ComponentSchema.
-    # criticality values are on a 1-10 scale (10 = most critical).
-    # Position values are canvas pixel coordinates for the React Flow diagram.
+    db_id_to_component_id = {
+        component.id: component.component_id for component in architecture.components
+    }
+
     return ArchitectureSchema(
-        id=architecture_id,
-        name="Stub Architecture",
-        description="Auto-generated stub for development",
+        id=architecture.id,
+        name=architecture.name,
+        description=architecture.description,
         components=[
             {
-                "id": "sensor-1",
-                "name": "Sensor-1",
-                "type": "Sensor",
-                "criticality": 7,
-                "position": {"x": 100, "y": 100},
-            },
-            {
-                "id": "compute-1",
-                "name": "Compute-1",
-                "type": "Compute",
-                "criticality": 8,
-                "position": {"x": 300, "y": 100},
-            },
-            {
-                "id": "control-1",
-                "name": "Control-1",
-                "type": "Control",
-                "criticality": 9,  # Highest criticality - losing Control is worst
-                "position": {"x": 500, "y": 100},
-            },
+                "id": component.component_id,
+                "name": component.name,
+                "type": component.component_type,
+                "criticality": component.criticality,
+                "position": {
+                    "x": component.position_x or 0.0,
+                    "y": component.position_y or 0.0,
+                },
+            }
+            for component in architecture.components
         ],
         flows=[
             {
-                "id": "flow-1",
-                "source": "sensor-1",
-                "target": "compute-1",
-                # integrity means the Compute node depends on correct, untampered data
-                "cia_requirement": "integrity",
-            },
-            {
-                "id": "flow-2",
-                "source": "compute-1",
-                "target": "control-1",
-                # availability means Control needs a continuous live feed from Compute
-                "cia_requirement": "availability",
-            },
+                "id": f"flow-{flow.id}",
+                "source": db_id_to_component_id[flow.source_component_id],
+                "target": db_id_to_component_id[flow.target_component_id],
+                "data_type": flow.data_type,
+                "cia_requirement": flow.cia_requirement,
+                "latency_sensitivity": flow.latency_sensitivity,
+            }
+            for flow in architecture.flows
+            if (
+                flow.source_component_id in db_id_to_component_id
+                and flow.target_component_id in db_id_to_component_id
+            )
         ],
     )
+
+
+def _load_architecture_schema(db: Session, architecture_id: int) -> ArchitectureSchema:
+    architecture = (
+        db.query(Architecture)
+        .options(
+            selectinload(Architecture.components),
+            selectinload(Architecture.flows),
+        )
+        .filter(Architecture.id == architecture_id)
+        .first()
+    )
+
+    if architecture is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Architecture {architecture_id} not found.",
+        )
+
+    return _architecture_to_schema(architecture)
 
 
 # POST /architectures/{architecture_id}/simulate
@@ -155,6 +157,7 @@ async def simulate_architecture(
     # In tests we override get_settings() to inject a test Settings object,
     # which means tests don't read from the real .env file.
     settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
 ) -> SimulationResultSchema:
     """
     Run an attack scenario against the specified architecture.
@@ -182,15 +185,16 @@ async def simulate_architecture(
         target_component_id,
     )
 
-    # Load the architecture that will be simulated.
-    # TODO (Person 3): swap this stub for a real database query, e.g.:
-    #     architecture = db.query(ArchitectureORM).filter_by(id=architecture_id).first()
-    #     if not architecture:
-    #         raise HTTPException(
-    #             status_code=404, detail=f"Architecture {architecture_id} not found"
-    #         )
-    #     architecture = architecture.to_schema()
-    architecture = _get_architecture_stub(architecture_id)
+    try:
+        architecture = _load_architecture_schema(db, architecture_id)
+    except HTTPException:
+        raise
+    except SQLAlchemyError as exc:
+        logger.error("Database error loading architecture %d: %s", architecture_id, exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to load architecture for simulation. Database error.",
+        ) from exc
 
     try:
         # Build the NetworkX graph from the architecture and run the scenario.
