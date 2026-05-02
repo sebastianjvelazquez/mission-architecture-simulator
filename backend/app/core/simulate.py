@@ -34,9 +34,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import Settings, get_settings
-from app.models.schemas import ArchitectureSchema, SimulationResultSchema
 from app.database import get_db
 from app.models.architecture import Architecture
+from app.models.schemas import ArchitectureSchema, SimulationResultSchema
 from app.services.simulator import MissionArchitectureSimulator, SimulatorError
 
 # Module-level logger. Log messages will appear in the terminal when running
