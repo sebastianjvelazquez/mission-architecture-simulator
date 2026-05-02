@@ -12,6 +12,7 @@ from app.models.schemas import (
     ArchitectureCreate,
     ArchitectureResponse,
     ArchitectureSummaryResponse,
+    CompareResponse,
     MitigationCreate,
     MitigationResponse,
 )
@@ -299,6 +300,105 @@ def list_architectures(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve architectures. Database error.",
         ) from exc
+
+
+@router.get(
+    "/compare",
+    response_model=CompareResponse,
+    summary="Compare two architectures by structural mission score",
+)
+def compare_architectures(
+    baseline_id: int = Query(..., description="ID of the baseline architecture"),
+    mitigated_id: int = Query(..., description="ID of the mitigated architecture to compare against"),
+    db: Session = Depends(get_db),
+) -> CompareResponse:
+    """Compare two architectures using a weighted criticality score.
+
+    The structural mission score is calculated as:
+        (sum of component criticality / (component count * 10)) * 100
+
+    A higher score indicates higher overall mission-critical capacity.
+    delta_mission_score = mitigated_score - baseline_score
+    Positive delta means the mitigated architecture is an improvement.
+    """
+    try:
+        baseline = (
+            db.query(Architecture)
+            .options(*_ARCH_LOAD_OPTIONS)
+            .filter(Architecture.id == baseline_id)
+            .first()
+        )
+    except SQLAlchemyError as exc:
+        logger.error("Database error fetching baseline architecture %d: %s", baseline_id, exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve baseline architecture. Database error.",
+        ) from exc
+
+    if baseline is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Baseline architecture with id {baseline_id} not found.",
+        )
+
+    try:
+        mitigated = (
+            db.query(Architecture)
+            .options(*_ARCH_LOAD_OPTIONS)
+            .filter(Architecture.id == mitigated_id)
+            .first()
+        )
+    except SQLAlchemyError as exc:
+        logger.error("Database error fetching mitigated architecture %d: %s", mitigated_id, exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve mitigated architecture. Database error.",
+        ) from exc
+
+    if mitigated is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Mitigated architecture with id {mitigated_id} not found.",
+        )
+
+    def _score(arch: Architecture) -> float:
+        if not arch.components:
+            return 100.0
+        total = sum(c.criticality for c in arch.components)
+        max_total = len(arch.components) * 10
+        return round(100.0 * total / max_total, 2)
+
+    baseline_score = _score(baseline)
+    mitigated_score = _score(mitigated)
+    delta = round(mitigated_score - baseline_score, 2)
+
+    if delta > 0:
+        summary = (
+            f"'{mitigated.name}' scores {delta:.1f} points higher than '{baseline.name}'. "
+            "The mitigated architecture has improved mission-critical capacity."
+        )
+    elif delta < 0:
+        summary = (
+            f"'{mitigated.name}' scores {abs(delta):.1f} points lower than '{baseline.name}'. "
+            "The mitigated architecture has reduced mission-critical capacity."
+        )
+    else:
+        summary = (
+            f"'{baseline.name}' and '{mitigated.name}' have equivalent mission-critical scores. "
+            "No structural change detected."
+        )
+
+    return CompareResponse(
+        baseline_id=baseline_id,
+        mitigated_id=mitigated_id,
+        baseline_score=baseline_score,
+        mitigated_score=mitigated_score,
+        delta_mission_score=delta,
+        score_delta=delta,
+        baseline_component_count=len(baseline.components),
+        mitigated_component_count=len(mitigated.components),
+        summary=summary,
+    )
 
 
 @router.get(

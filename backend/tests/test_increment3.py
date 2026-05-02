@@ -878,14 +878,9 @@ class TestCompareFeaturePlaceholder:
     """
     Tests for GET /architectures/compare?baseline_id={id}&mitigated_id={id}.
 
-    Remove the xfail mark and fill in assertions once Person 2 implements
-    the compare endpoint in issue #84 (Compare Scenarios & Mitigation Scoring Logic).
+    Implemented in issue #84 (Compare Scenarios & Mitigation Scoring Logic).
     """
 
-    @pytest.mark.xfail(
-        reason="Compare endpoint not yet implemented (issue #84). Remove xfail when done.",
-        strict=False,
-    )
     def test_compare_returns_delta_score(self, real_client):
         arch_id_1 = _create_arch(real_client)
         arch_id_2 = _create_arch(real_client)
@@ -896,19 +891,11 @@ class TestCompareFeaturePlaceholder:
         data = r.json()
         assert "delta_mission_score" in data or "score_delta" in data
 
-    @pytest.mark.xfail(
-        reason="Compare endpoint not yet implemented (issue #84). Remove xfail when done.",
-        strict=False,
-    )
     def test_compare_with_nonexistent_baseline_returns_404(self, real_client):
         arch_id = _create_arch(real_client)
         r = real_client.get(f"/architectures/compare?baseline_id=99999&mitigated_id={arch_id}")
         assert r.status_code == 404
 
-    @pytest.mark.xfail(
-        reason="Compare endpoint not yet implemented (issue #84). Remove xfail when done.",
-        strict=False,
-    )
     def test_compare_same_architecture_returns_zero_delta(self, real_client):
         arch_id = _create_arch(real_client)
         r = real_client.get(
@@ -918,3 +905,40 @@ class TestCompareFeaturePlaceholder:
         data = r.json()
         delta = data.get("delta_mission_score") or data.get("score_delta", None)
         assert delta == 0 or delta is None
+
+    def test_compare_mitigated_not_found_returns_404(self, real_client):
+        arch_id = _create_arch(real_client)
+        r = real_client.get(f"/architectures/compare?baseline_id={arch_id}&mitigated_id=99999")
+        assert r.status_code == 404
+
+    def test_compare_returns_all_expected_fields(self, real_client):
+        arch_id_1 = _create_arch(real_client)
+        arch_id_2 = _create_arch(real_client)
+        r = real_client.get(
+            f"/architectures/compare?baseline_id={arch_id_1}&mitigated_id={arch_id_2}"
+        )
+        assert r.status_code == 200
+        data = r.json()
+        assert "baseline_id" in data
+        assert "mitigated_id" in data
+        assert "baseline_score" in data
+        assert "mitigated_score" in data
+        assert "delta_mission_score" in data
+        assert "score_delta" in data
+        assert "baseline_component_count" in data
+        assert "mitigated_component_count" in data
+        assert "summary" in data
+        assert isinstance(data["summary"], str)
+        assert data["baseline_id"] == arch_id_1
+        assert data["mitigated_id"] == arch_id_2
+
+    def test_compare_sqlalchemy_error_on_baseline_returns_500(self, mock_client):
+        db = MagicMock(spec=Session)
+        db.query.side_effect = _make_sqlalchemy_error()
+        app.dependency_overrides[get_db] = _override(db)
+        try:
+            r = mock_client.get("/architectures/compare?baseline_id=1&mitigated_id=2")
+            assert r.status_code == 500
+        finally:
+            app.dependency_overrides.pop(get_db, None)
+
