@@ -30,6 +30,7 @@ htmlcov/
 # Editors
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 
@@ -47,4 +48,4 @@ alembic/versions/*.py
 # Temp files - do not commit
 VIDEO_SCRIPT.md
 GITHUB_ISSUES_INCREMENT_1.md
-.vercel
+.vercel/
