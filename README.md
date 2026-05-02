@@ -6,7 +6,7 @@ Mission Architecture Simulator is a full-stack web application for modeling miss
 
 The project is built as a portfolio-grade security engineering tool: users can draw an architecture, save it to a production database, run simulations against saved systems, and review mission impact through a dashboard.
 
-![Mission Architecture Simulator dashboard](frontend/public/DashboardMockup.png)
+![Mission Architecture Simulator dashboard](Demo%20Mission%20Architecture%20Simulator.png)
 
 ## Live Deployment
 
